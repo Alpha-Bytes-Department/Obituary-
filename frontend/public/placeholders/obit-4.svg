@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-label="Memorial placeholder 4">
+  <defs>
+    <linearGradient id="g4" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#111827" />
+      <stop offset="100%" stop-color="#fef3c7" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#g4)" />
+  <rect x="80" y="80" width="1040" height="640" rx="60" fill="rgba(255,255,255,0.12)" />
+  <text x="120" y="360" fill="#f8fafc" font-family="Arial, sans-serif" font-size="72" font-weight="700">Stories and Songs</text>
+</svg>

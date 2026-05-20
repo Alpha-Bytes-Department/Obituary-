@@ -1,130 +1,114 @@
-# Implementation Roadmap & Technical Specifications
+# Implementation Roadmap & Technical Specifications (Segmented Approach)
 
-**Goal:** Execute this plan sequentially. Do not move to the next phase until the "Definition of Done" for the current phase is completely met and tested. Follow the strict architectural boundaries defined below to minimize token waste and prevent hallucinations.
+**Goal:** Execute this plan sequentially. We will build the entire UI using mock data first, establish the backend infrastructure second, and finally bridge the two. Do not move to the next phase until the "Definition of Done" is met.
 
 ---
 
-## Phase 1: Project Initialization, Routing & Authentication
+## Phase 1: Frontend Initialization & Mock UI Shell
 
-**Objective:** Establish the foundational folder structures, routing logic, and secure JWT-based authentication flow.
+**Objective:** Set up the Next.js project, implement routing, and build the foundational layouts using static/mock data.
 
-### 1.1 Folder Structure (Strict Adherence)
-* **Backend (Express):**
-    * `/src/controllers` (authController.js, userController.js)
-    * `/src/routes` (authRoutes.js, userRoutes.js)
-    * `/src/models` (User.js, Token.js)
-    * `/src/middlewares` (authMiddleware.js, errorMiddleware.js)
-    * `/src/utils` (jwtUtils.js, emailUtils.js)
-
-* **Frontend (Next.js App Router):**
-    * `/src/app/(public)` (/,/obituary, /obituary/[id], /login, /register, /forgot-password)
-    * `/src/app/(protected)/profile` (User dashboard, create obituary )
+### 1.1 Frontend Structure & Routing
+* **API and tech:** use axios , react hook form 
+* **App Router Setup:**
+    * `/src/app/(public)` (/, /obituary, /obituary/[id], /login, /register, /forgot-password)
+    * `/src/app/(protected)/profile` (User dashboard, create obituary)
     * `/src/app/(admin)/admin` (Admin dashboard)
-    * `/src/components/auth` (LoginForm, RegisterForm)
+* **Global Layouts:** Navbar (with dynamic links for guest/user/admin), Footer , use context api for the global context and state management.
+* **Provider and hooks:** Make provider and wrapper for the required provider like axios provider by creating a hook 
 
-### 1.2 Authentication Endpoints & Flow
-also use an env example for both back end and frontend , 
-set up cors properly in the backend , allow all origin for the development while production allow only permited origin
-Implement standard JWT auth using `bcryptjs` and `jsonwebtoken`.
-* `POST /api/auth/register`: Accepts `firstName`, `lastName`, `email`, `password`. Hashes password.
-* `POST /api/auth/login`: Validates credentials.
-    * **Access Token:** Short-lived (e.g., 15 mins), returned in the JSON payload, stored in frontend memory (Zustand/Context/React Query).
-    * **Refresh Token:** Long-lived (e.g., 7 days), saved in the `users` database collection, and sent to the client via an `HttpOnly`, `Secure` cookie.
-* `POST /api/auth/refresh`: Reads the HttpOnly cookie, validates against the DB, and issues a new Access Token.
-* `POST /api/auth/forgot-password`: Generates a reset token, saves hash to DB with expiry, sends email.
-* `POST /api/auth/reset-password`: Validates token from URL and updates password.
+
+### 1.2 UI Components & Mock Data
+* Create a `src/lib/mockData.js` file to hold fake obituaries, users, and condolences.
+* Build the **Homepage:** Hero search bar UI, Today's Featured grid, All-Time Memorable grid.
+* Build the **Obituary Detail Page:** Image slider UI, Biography layout, Family Tree visualizer, and Condolences section.
+* Build **Auth Forms:** Login, Register, Forgot Password UI using `react-hook-form` and `zod` for validation.
 
 ### 1.3 Definition of Done (Phase 1)
-* Users can register, log in, and log out.
-* Access tokens refresh silently via the HttpOnly cookie.
-* Next.js middleware restricts access to `/profile` (requires user role) and `/admin` (requires admin role).
+* All routes are accessible and render without errors.
+* The application looks complete visually using mock data.
+* Client-side form validation works perfectly.
 
 ---
 
-## Phase 2: Database Models, Core REST API & Cloudinary
+## Phase 2: Frontend State & Complex Flows
 
-**Objective:** Create exact database models, build the core CRUD endpoints, and implement cost/space-effective media handling.
+**Objective:** Implement frontend state management and build out the complex user interaction flows.
 
-### 2.1 Database Models
-Create Mongoose schemas matching `DATABASE_SCHEMA.md` exactly. Enforce types, required fields, and default values. Add Mongoose indexes to `obituaries.deceasedFirstName`, `obituaries.deceasedLastName`, and `obituaries.location.city` for fast querying.
+### 2.1 Multi-Step Obituary Creation Form (`/profile/create`)
+* **Step 1:** Basic Details & Bio form.
+* **Step 2:** Image Uploads UI (simulate upload delay).
+* **Step 3:** Family Tree builder (Dynamic field array allowing add/remove relations).
+* **Step 4:** Payment/Token Gate UI (mock Stripe elements and token input).
 
-### 2.2 Core REST Endpoints (Cost-Effective Pagination)
-All `GET` endpoints returning lists MUST implement `limit` and `skip` (pagination) and projection (selecting only necessary fields) to minimize database egress costs.
-* `GET /api/obituaries`: Query params: `page`, `limit`, `search`, `city`, `age`. Returns basic info only (no family tree or full bio).
-* `GET /api/obituaries/:id`: Returns full document.
-* `POST /api/obituaries`: Protected. Creates draft.
-* `GET /api/condolences/:obituaryId`: Paginated.
-* `POST /api/condolences/:obituaryId`: Creates normal or candle condolence.
+### 2.2 Dashboards
+* **User Profile:** UI for viewing personal mock obituaries with status badges (Draft, Pending Payment, Live) and the "Request Token" button.
+* **Admin Panel:** Data tables for Obituary Management, Token Approvals, and Condolence Moderation using mock data.
 
-### 2.3 Cloudinary Integration (Space-Effective Media)
-* Use `multer` for receiving files on the Express backend.
-* Upload directly to Cloudinary using specific transformation parameters to save storage and bandwidth: `f_auto` (auto-format), `q_auto` (auto-quality), `c_limit`, `w_1000` (max width 1000px).
-* Save the optimized returned URL to the MongoDB `images` array.
-
-### 2.4 Definition of Done (Phase 2)
-* Mongoose models are strict and indexed.
-* Postman/Swagger tests confirm APIs work with pagination and field projection.
-* Images uploaded via the API are resized and optimized by Cloudinary before URL is stored.
+### 2.3 Definition of Done (Phase 2)
+* The multi-step form persists state across steps.
+* Admin and User dashboards accurately reflect state changes (e.g., clicking "approve" updates the mock UI).
 
 ---
 
-## Phase 3: Frontend - Discovery, Homepage & SEO
+## Phase 3: Backend Initialization, Database & Core API
 
-**Objective:** Build the public-facing pages prioritizing Next.js Server-Side Rendering (SSR) for SEO.
+**Objective:** Set up Express.js, connect to MongoDB, and build the strict data models.
 
-### 3.1 Homepage UI
-* **Hero Search:** Client component. Use a debounced search input pushing query params to the URL (`/?city=Dhaka&name=John`).
-* **Today's Featured:** Server Component. Fetch from `/api/obituaries?featured=today`. Compare current Date/Month against `dateOfDeath`.
-* **All-Time Memorable:** Server Component. Fetch where `isFeatured=true`.
+### 3.1 Backend Structure & Setup
+* Establish `/src/controllers`, `/src/routes`, `/src/models`, `/src/middlewares`, `/src/utils`.
+* Setup CORS to allow all origins for development and restricted origins for production.
+* Create `.env.example` defining required keys.
 
-### 3.2 Obituary Detail Page (`/obituary/[id]`)
-* Fetch data server-side so social media bots (Facebook, WhatsApp) can read meta tags for sharing previews (Open Graph tags: `og:title`, `og:image`).
-* Implement the Image Slider using Framer Motion or Swiper.js.
-* Render the Family Tree conditionally if data exists.
-* Condolence Section: Client component allowing guests (requiring Name/Email) or logged-in users to post. Include UI toggle for "Normal Message" vs "Light a Candle".
+### 3.2 Database Models
+* Implement Mongoose schemas exactly as defined in `DATABASE_SCHEMA.md`.
+* Add Mongoose indexes to `deceasedFirstName`, `deceasedLastName`, and `location.city`.
 
-### 3.3 Definition of Done (Phase 3)
-* Homepage renders dynamically based on URL search parameters.
-* Obituary pages have correct dynamic `<meta>` tags for SEO and sharing.
-* Users can successfully light a candle or leave a text condolence.
+### 3.3 Core REST Endpoints (CRUD)
+* `GET /api/obituaries` (Implement `limit`, `skip`, and projection).
+* `GET /api/obituaries/:id`.
+* `POST /api/obituaries` and `POST /api/condolences/:obituaryId`.
 
----
-
-## Phase 4: Frontend - Creation Flow & Payments
-
-**Objective:** Build the robust, multi-step obituary creation process and handle monetization securely.
-
-### 4.1 Multi-Step Creation Form
-* Use `react-hook-form` and `zod` for client-side validation to prevent unnecessary API calls.
-* **Step 1:** Basic Details & Bio.
-* **Step 2:** Image Uploads (Send to backend Cloudinary endpoint).
-* **Step 3:** Family Tree builder (Dynamic field array).
-* **Step 4:** Payment/Token Gate.
-
-### 4.2 Checkout Logic
-* **Promo Token Flow:** User enters code. Hit `POST /api/tokens/validate`. If valid, mark obituary as `live` and token as `isUsed=true`.
-* **Stripe Flow:** Hit `POST /api/payments/create-intent`. Load Stripe Elements UI. On success, backend Stripe Webhook marks obituary as `live`.
-
-### 4.3 User Profile Dashboard
-* Fetch user's obituaries. Show status badges (`Draft`, `Pending Payment`, `Live`).
-* "Request Free Token" button triggers `POST /api/users/request-token`, changing `tokenStatus` to `pending`.
-
-### 4.4 Definition of Done (Phase 4)
-* Form state persists across steps without data loss.
-* Obituaries go live immediately upon successful Stripe payment or valid token application.
+### 3.4 Definition of Done (Phase 3)
+* Express server runs and connects to MongoDB.
+* Postman/Swagger tests confirm CRUD APIs work with pagination and field projection.
 
 ---
 
-## Phase 5: Admin Panel & Moderation
+## Phase 4: Backend Auth, Media & Integrations
 
-**Objective:** Provide administrative control over users, content, and the token economy.
+**Objective:** Implement security, file handling, and payment logic.
 
-### 5.1 Admin Dashboard Features
-* **Obituary Management:** Table view of all obituaries. Actions: Delete, Edit, Toggle `isFeatured`.
-* **Token Approvals:** Table view of users with `tokenStatus === 'pending'`.
-    * Action "Approve" triggers `POST /api/admin/generate-token`, creates a record in `promo_tokens`, sets user to `approved`, and emails the user the code.
-* **Condolence Moderation:** View flagged or all condolences. Toggle status to `hidden` if inappropriate.
+### 4.1 Authentication & Security
+* Implement `bcryptjs` and `jsonwebtoken`.
+* Create `register`, `login`, `refresh`, `forgot-password`, and `reset-password` endpoints.
+* Setup HttpOnly, Secure cookies for the refresh token.
 
-### 5.2 Definition of Done (Phase 5)
-* Only users with `role === 'admin'` can load these routes and access the admin API endpoints.
-* Admin can successfully issue a token that the user can subsequently use in Phase 4.
+### 4.2 Cloudinary & Stripe Integration
+* Implement `multer` and Cloudinary upload logic (`f_auto`, `q_auto`, `w_1000`).
+* Implement Stripe Payment Intent endpoints and Webhook listeners to update obituary statuses to `live`.
+* Implement Promo Token validation logic.
+
+### 4.3 Definition of Done (Phase 4)
+* Tokens generate and refresh properly via Postman.
+* Images upload successfully to Cloudinary.
+* Stripe Webhooks successfully hit local endpoints (using Stripe CLI).
+
+---
+
+## Phase 5: API Integration & Final QA
+
+**Objective:** Bridge the Frontend and Backend, replacing all mock data with real API calls.
+
+### 5.1 Data Fetching & Hydration
+* Replace `mockData.js` imports with Axios/Fetch calls in Next.js Server Components.
+* Hook up the Login/Register forms to the Auth API and store the Access Token in memory/Zustand.
+* Connect the Multi-Step form to Cloudinary endpoints and the Obituary creation API.
+
+### 5.2 Middleware & Route Protection
+* Implement Next.js Middleware to read tokens and protect `/profile` and `/admin` routes.
+* Ensure SEO tags on `/obituary/[id]` are dynamically populated from the real database.
+
+### 5.3 Definition of Done (Phase 5)
+* End-to-end flow works: A new user can register, create an obituary, upload real images, pay via test Stripe card, and see it live on the homepage.
+* Mock data is completely removed from the repository.

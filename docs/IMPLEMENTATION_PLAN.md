@@ -17,8 +17,8 @@
     * `/src/utils` (jwtUtils.js, emailUtils.js)
 
 * **Frontend (Next.js App Router):**
-    * `/src/app/(public)` (/, /obituary/[id], /login, /register, /forgot-password)
-    * `/src/app/(protected)/profile` (User dashboard)
+    * `/src/app/(public)` (/,/obituary, /obituary/[id], /login, /register, /forgot-password)
+    * `/src/app/(protected)/profile` (User dashboard, create obituary )
     * `/src/app/(admin)/admin` (Admin dashboard)
     * `/src/components/auth` (LoginForm, RegisterForm)
 

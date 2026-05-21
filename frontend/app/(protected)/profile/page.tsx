@@ -1,4 +1,4 @@
-import ProfileContainer from "@/Component/protected/ProfileContainer";
+import ProfileContainer from "../../../Component/protected/ProfileContainer";
 
 /**
  * Wrapper for the protected profile dashboard.

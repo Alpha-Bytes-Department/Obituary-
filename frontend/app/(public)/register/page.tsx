@@ -1,4 +1,4 @@
-import RegisterContainer from "@/Component/public/auth/register/RegisterContainer";
+import RegisterContainer from "../../../Component/public/auth/register/RegisterContainer";
 
 /**
  * Wrapper for the register page.

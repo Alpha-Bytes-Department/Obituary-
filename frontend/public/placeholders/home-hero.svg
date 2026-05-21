@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-label="Memorial hero background">
+  <defs>
+    <radialGradient id="sky" cx="50%" cy="35%" r="75%">
+      <stop offset="0%" stop-color="#46311f" />
+      <stop offset="50%" stop-color="#1a1a18" />
+      <stop offset="100%" stop-color="#0b0c0d" />
+    </radialGradient>
+    <linearGradient id="glow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f4d08f" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#d59d3d" stop-opacity="0.15" />
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#sky)" />
+  <circle cx="420" cy="220" r="220" fill="#f5d6a1" opacity="0.18" />
+  <circle cx="1180" cy="300" r="260" fill="#b97a3b" opacity="0.12" />
+  <ellipse cx="810" cy="720" rx="520" ry="150" fill="#000" opacity="0.22" />
+  <path d="M560 700c70-150 150-270 240-270s170 120 240 270" fill="#261a12" opacity="0.92" />
+  <circle cx="610" cy="410" r="120" fill="#f6e3cc" opacity="0.82" />
+  <circle cx="980" cy="410" r="120" fill="#f1d9c2" opacity="0.82" />
+  <path d="M500 560c90 55 120 135 120 190H370c0-72 55-144 130-190Z" fill="#4a3124" opacity="0.96" />
+  <path d="M1000 560c90 55 120 135 120 190H870c0-72 55-144 130-190Z" fill="#5b3b2a" opacity="0.96" />
+  <rect x="340" y="620" width="920" height="180" rx="90" fill="url(#glow)" opacity="0.38" />
+</svg>

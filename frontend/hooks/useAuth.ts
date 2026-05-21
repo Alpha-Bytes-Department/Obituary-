@@ -1,4 +1,4 @@
-import useAppContext from "@/hooks/useAppContext";
+import useAppContext from "./useAppContext";
 
 /**
  * Returns auth-related state and actions.

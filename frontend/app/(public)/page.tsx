@@ -1,4 +1,4 @@
-import HomeContainer from "@/Component/public/home/HomeContainer";
+import HomeContainer from "../../Component/public/home/HomeContainer";
 
 /**
  * Wrapper for the public homepage.

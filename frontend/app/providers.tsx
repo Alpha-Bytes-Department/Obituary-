@@ -2,8 +2,8 @@
 
 import type { ReactNode } from "react";
 
-import { AppProvider } from "@/context/AppContext";
-import { AxiosProvider } from "@/context/AxiosProvider";
+import { AppProvider } from "../context/AppContext";
+import { AxiosProvider } from "../context/AxiosProvider";
 
 /**
  * Composes the global application providers.

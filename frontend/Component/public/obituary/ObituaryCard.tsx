@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import type { ObituaryMock } from "@/lib/mockData";
+import type { ObituaryMock } from "../../../lib/mockData";
 
 interface ObituaryCardProps {
   item: ObituaryMock;

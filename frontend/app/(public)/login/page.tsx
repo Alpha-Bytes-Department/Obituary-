@@ -1,4 +1,4 @@
-import LoginContainer from "@/Component/public/auth/login/LoginContainer";
+import LoginContainer from "../../../Component/public/auth/login/LoginContainer";
 
 /**
  * Wrapper for the login page.

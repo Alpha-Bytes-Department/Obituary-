@@ -1,4 +1,4 @@
-import ForgotPasswordContainer from "@/Component/public/auth/forgot_password/ForgotPasswordContainer";
+import ForgotPasswordContainer from "../../../Component/public/auth/forgot_password/ForgotPasswordContainer";
 
 /**
  * Wrapper for the forgot password page.

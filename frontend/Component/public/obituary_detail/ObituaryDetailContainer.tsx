@@ -1,4 +1,4 @@
-import { mockObituaries } from "@/lib/mockData";
+import { mockObituaries } from "../../../lib/mockData";
 
 import ImageSlider from "./ImageSlider";
 import CondolenceSection from "./CondolenceSection";

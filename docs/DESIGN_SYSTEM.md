@@ -5,9 +5,8 @@
 | Name | Hex | Use |
 |------|-----|-----|
 | `primary` | `#1E3A5F` | Main buttons, active states, headers |
-| `secondary`| `#4B5563` | Subtitles, muted text |
-| `accent` | `#D1D5DB` | Borders, subtle backgrounds |
-| `background`| `#F9FAFB` | Page backgrounds |
+| `secondary`| `#626262` | Subtitles, muted text |
+| `background`| `#faf8f5` | Page backgrounds |
 
 ## Typography
 * **Headings:** Serif font (e.g., Playfair Display) to convey respect and tradition.

@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import type { FormEvent } from "react";
 
-import { mockCondolences } from "@/lib/mockData";
+import { mockCondolences } from "../../../lib/mockData";
 
 interface CondolenceSectionProps {
   obituaryId: string;

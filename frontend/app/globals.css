@@ -49,10 +49,11 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  /* Design system tokens */
+  --background: #faf8f5; /* page background (design system md) */
+  --foreground: #111827;
+  --card: #ffffff; /* cards should be white */
+  --card-foreground: #111827;
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
   --primary: oklch(0.205 0 0);

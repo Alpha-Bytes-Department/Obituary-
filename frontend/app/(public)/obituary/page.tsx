@@ -1,4 +1,4 @@
-import ObituaryListContainer from "@/Component/public/obituary/ObituaryListContainer";
+import ObituaryListContainer from "../../../Component/public/obituary/ObituaryListContainer";
 
 /**
  * Wrapper for the obituary listing page.

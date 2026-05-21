@@ -1,4 +1,4 @@
-import type { ObituaryMock } from "@/lib/mockData";
+import type { ObituaryMock } from "../../../lib/mockData";
 
 import ObituaryCard from "../obituary/ObituaryCard";
 

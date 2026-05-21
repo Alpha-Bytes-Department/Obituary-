@@ -1,4 +1,4 @@
-import AdminDashboard from "@/Component/admin/AdminDashboard";
+import AdminDashboard from "../../../Component/admin/AdminDashboard";
 
 /**
  * Wrapper for the admin dashboard route.

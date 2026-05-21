@@ -1,4 +1,4 @@
-import { useAppContext as useAppContextClient } from "@/context/AppContext";
+import { useAppContext as useAppContextClient } from "../context/AppContext";
 
 /**
  * Returns the global application context.

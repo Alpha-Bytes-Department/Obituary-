@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Search } from "lucide-react";
 
-import useDebounce from "@/hooks/useDebounce";
+import useDebounce from "../../../hooks/useDebounce";
 
 /**
  * Renders the homepage search bar with debounced URL updates.
@@ -36,15 +37,24 @@ export default function HeroSearch() {
   }, [debouncedQuery, router, searchParams]);
 
   return (
-    <label className="block max-w-2xl">
+    <form className="block w-full max-w-2xl">
       <span className="sr-only">Search obituaries</span>
-      <input
-        value={query}
-        onChange={(event) => setQuery(event.target.value)}
-        placeholder="Search by name or city"
-        className="w-full rounded-full border border-white/10 bg-white/10 px-5 py-4 text-white placeholder:text-white/45 outline-none transition focus:border-white/25 focus:bg-white/15"
-        aria-label="Search obituaries"
-      />
-    </label>
+      <div className="flex items-stretch overflow-hidden rounded-[0.7rem] bg-white shadow-[0_18px_40px_rgba(31,41,55,0.18)] ring-1 ring-black/5">
+        <input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Search memorials by name, location, or date..."
+          className="min-w-0 flex-1 px-5 py-4 text-[1rem] text-slate-700 outline-none placeholder:text-slate-400"
+          aria-label="Search obituaries"
+        />
+        <button
+          type="button"
+          className="flex items-center justify-center bg-[#1e3a5f] px-5 text-white transition hover:bg-[#16314f]"
+          aria-label="Search memorials"
+        >
+          <Search className="h-5 w-5" />
+        </button>
+      </div>
+    </form>
   );
 }

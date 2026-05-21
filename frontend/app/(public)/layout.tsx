@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import SiteShell from "@/Component/layout/SiteShell";
+import SiteShell from "../../Component/layout/SiteShell";
 
 /**
  * Wraps public routes in the shared site shell.

@@ -1,4 +1,4 @@
-import ObituaryDetailContainer from "@/Component/public/obituary_detail/ObituaryDetailContainer";
+import ObituaryDetailContainer from "../../../../Component/public/obituary_detail/ObituaryDetailContainer";
 
 interface ObituaryDetailPageProps {
   params: {

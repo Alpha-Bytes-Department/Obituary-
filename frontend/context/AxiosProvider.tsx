@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import type { AxiosInstance } from "axios";
 import type { ReactNode } from "react";
 
-import { useAppContext } from "@/context/AppContext";
+import { useAppContext } from "./AppContext";
 
 const AxiosContext = createContext<AxiosInstance | undefined>(undefined);
 

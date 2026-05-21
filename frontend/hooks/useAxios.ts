@@ -1,4 +1,4 @@
-import { useAxios as useAxiosClient } from "@/context/AxiosProvider";
+import { useAxios as useAxiosClient } from "../context/AxiosProvider";
 
 /**
  * Returns the shared Axios instance for API calls.

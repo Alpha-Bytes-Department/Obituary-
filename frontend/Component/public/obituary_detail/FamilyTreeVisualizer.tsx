@@ -1,4 +1,4 @@
-import type { FamilyRelation } from "@/lib/mockData";
+import type { FamilyRelation } from "../../../lib/mockData";
 
 interface FamilyTreeVisualizerProps {
   relations: FamilyRelation[];

@@ -10,6 +10,7 @@ import AllTimeGrid from "./AllTimeGrid";
 import FeaturedGrid from "./FeaturedGrid";
 import HeroSearch from "./HeroSearch";
 import FuneralAdviceSection from "./FuneralAdviceSection";
+import { testimonials } from "./data";
 
 export default function HomeContainer() {
   return (
@@ -93,6 +94,29 @@ export default function HomeContainer() {
       </section>
 
       <FuneralAdviceSection />
+      <section className="rounded-sm bg-[#d8ad59] px-6 py-12 sm:px-10">
+        <div className="max-w-6xl mx-auto text-center">
+          <h2 className="font-heading text-3xl sm:text-4xl font-semibold text-[#132855]">
+            Trusted by Families Nationwide
+          </h2>
+          <p className="mx-auto mt-3 max-w-2xl text-base leading-7 text-slate-700/80">
+            See how Legacy.com has helped families honor their loved ones with
+            dignity and care.
+          </p>
+
+          <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-3">
+            {testimonials.map((t) => (
+              <div
+                key={t.id}
+                className="rounded-sm bg-white p-6 text-left shadow-sm"
+              >
+                <p className="text-slate-700 mb-4">" {t.quote} "</p>
+                <p className="font-semibold text-[#132855]">{t.author}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
     </main>
   );
 }

@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
+import { Crimson_Text, Geist_Mono, Montserrat } from "next/font/google";
 import AppProviders from "./providers";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const montserrat = Montserrat({
+  variable: "--font-sans",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 const geistMono = Geist_Mono({
@@ -13,10 +14,10 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const playfairDisplay = Playfair_Display({
-  variable: "--font-playfair",
+const crimsonText = Crimson_Text({
+  variable: "--font-heading",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -32,9 +33,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${playfairDisplay.variable} h-full antialiased`}
+      className={`${montserrat.variable} ${geistMono.variable} ${crimsonText.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-[radial-gradient(circle_at_top,#faf7f2,#fff_52%,#f7f3ed)] text-slate-950">
+      <body className="min-h-full flex flex-col bg-[#faf8f5] text-slate-950">
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

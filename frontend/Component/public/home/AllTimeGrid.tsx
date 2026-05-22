@@ -1,6 +1,8 @@
+"use client";
+
 import type { ObituaryMock } from "../../../lib/mockData";
 
-import ObituaryCard from "../obituary/ObituaryCard";
+import ResponsiveCarousel from "./ResponsiveCarousel";
 
 /**
  * Renders the all-time memorable obituary grid.
@@ -11,10 +13,8 @@ import ObituaryCard from "../obituary/ObituaryCard";
  */
 export default function AllTimeGrid({ items }: { items: ObituaryMock[] }) {
   return (
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-      {items.map((item) => (
-        <ObituaryCard key={item.id} item={item} variant="memorable" />
-      ))}
+    <div className="p-4 lg:p-5">
+      <ResponsiveCarousel items={items} variant="memorable" />
     </div>
   );
 }

@@ -9,8 +9,8 @@
 | `background`| `#faf8f5` | Page backgrounds |
 
 ## Typography
-* **Headings:** Serif font (e.g., Playfair Display) to convey respect and tradition.
-* **Body Text:** Sans-serif (e.g., Inter or Roboto) for readability.
+* **Headings:** Crimson Text
+* **Body Text:** Montserrat for readability.
 
 ## Components
 * **Buttons:** Soft rounded corners (`rounded-md`), subtle shadow on hover.

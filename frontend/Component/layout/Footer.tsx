@@ -9,7 +9,7 @@ export default function Footer() {
       <div className="mx-auto  max-w-[90vw] px-4 py-16 sm:px-6 lg:px-8">
         <div className="grid gap-12 lg:grid-cols-[1.1fr_1fr_1fr_1fr]">
           <div className="space-y-6">
-            <h2 className="font-(family-name:--font-playfair) text-3xl tracking-[-0.03em] text-white">
+            <h2 className="font-heading text-3xl tracking-[-0.03em] text-white">
               Funeral Home
             </h2>
             <div className="flex items-center gap-4 text-white/90">
@@ -18,7 +18,7 @@ export default function Footer() {
                 aria-label="Facebook"
                 className="grid h-9 w-9 place-items-center rounded-full border border-white/20 transition hover:bg-white/10"
               >
-                f
+                F
               </a>
               <a
                 href="#"

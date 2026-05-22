@@ -14,7 +14,7 @@ export default function SiteShell({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
-      <main className="mx-auto  max-w-[90vw] flex-1 px-4 py-8 sm:px-6 lg:px-8">
+      <main className="mx-auto max-w-full  lg:max-w-[90vw] flex-1 px-4 py-8 sm:px-6 lg:px-8">
         {children}
       </main>
       <Footer />

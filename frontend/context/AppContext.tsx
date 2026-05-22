@@ -10,6 +10,7 @@ export interface AppUser {
   firstName: string;
   lastName: string;
   email: string;
+  userImage: string;
   role: Exclude<AppRole, "guest">;
 }
 

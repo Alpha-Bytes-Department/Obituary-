@@ -1,23 +1,17 @@
 import RegisterForm from "./RegisterForm";
 
-/**
- * Composes the register page content.
- *
- * @returns {JSX.Element} The register container.
- */
 export default function RegisterContainer() {
   return (
-    <section className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
-      <div className="space-y-4">
-        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">
-          Create account
-        </p>
-        <h1 className="text-4xl font-semibold tracking-tight text-slate-950">
-          Register to publish, save, and support memorial pages.
+    <section
+      className="mx-auto flex min-h-[calc(100vh-2rem)] w-full flex-col items-center px-4 pb-10 pt-4 sm:px-0 sm:pt-6"
+      style={{ maxWidth: 500 }}
+    >
+      <div className="text-center">
+        <h1 className="font-heading text-[1.8rem] leading-none tracking-[-0.02em] text-[#2d2a26] sm:text-[2rem]">
+          Create an Account
         </h1>
-        <p className="max-w-xl text-base leading-7 text-slate-600">
-          The form uses zod validation so the UI stays responsive and avoids
-          unnecessary requests.
+        <p className="mt-2 text-[0.98rem] text-[#7b746d]">
+          Start creating meaningful memorials
         </p>
       </div>
       <RegisterForm />

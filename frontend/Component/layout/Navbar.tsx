@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { CircleUserRound, Menu, X, ChevronRight } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { Menu, X, ChevronRight } from "lucide-react";
 
 import useAuth from "../../hooks/useAuth";
 
@@ -32,20 +33,15 @@ const publicLinks: NavItem[] = [
   { label: "Memorial", href: "/obituary" },
 ];
 
-/**
- * Renders the global navigation bar with role-aware links.
- *
- * @returns {JSX.Element} The navigation bar.
- */
 export default function Navbar() {
-  const { user, role, logout, isAuthenticated } = useAuth();
-  const router = useRouter();
+  const { user, role, isAuthenticated } = useAuth();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [avatarFailed, setAvatarFailed] = useState(false);
 
   const navigation =
     role === "admin" ? adminLinks : isAuthenticated ? userLinks : publicLinks;
-  const showPublicActions = !isAuthenticated || role === "guest";
+  const showPublicActions = !isAuthenticated;
 
   useEffect(() => {
     if (!menuOpen) {
@@ -67,15 +63,10 @@ export default function Navbar() {
     };
   }, [menuOpen]);
 
-  const handleLogout = () => {
-    logout();
-    router.push("/");
-    setMenuOpen(false);
-  };
-
   const initials = user
     ? `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase()
     : "";
+  const avatarSrc = user?.userImage && !avatarFailed ? user.userImage : null;
 
   return (
     <header className="sticky top-0 z-20 border-b border-[#ece6dd] bg-white">
@@ -131,18 +122,26 @@ export default function Navbar() {
                 Sign Up
               </Link>
             </>
-          ) : role === "admin" ? (
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="rounded-xl bg-[#1e3a5f] px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-[#16314f]"
-            >
-              Logout
-            </button>
           ) : (
-            <div className="flex items-center gap-3 rounded-full bg-white px-2 py-1 pr-4 shadow-sm ring-1 ring-black/5">
-              <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-[#1e3a5f] text-white">
-                {initials || <CircleUserRound className="h-7 w-7" />}
+            <Link
+              href="/profile"
+              className="flex items-center gap-3  bg-white px-2 py-1 pr-5  "
+            >
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#1e3a5f] text-white">
+                {avatarSrc ? (
+                  <Image
+                    src={avatarSrc}
+                    alt={`${user?.firstName} ${user?.lastName}`.trim()}
+                    width={48}
+                    height={48}
+                    className="h-full w-full object-cover"
+                    onError={() => setAvatarFailed(true)}
+                  />
+                ) : (
+                  <span className="text-sm font-semibold tracking-[0.08em]">
+                    {initials || "--"}
+                  </span>
+                )}
               </div>
               <div className="hidden min-w-0 sm:block">
                 <p className="truncate text-sm font-medium text-[#1e3a5f]">
@@ -150,7 +149,7 @@ export default function Navbar() {
                 </p>
                 <p className="truncate text-xs text-[#626262]">{user?.email}</p>
               </div>
-            </div>
+            </Link>
           )}
         </div>
       </div>
@@ -229,22 +228,27 @@ export default function Navbar() {
                     Sign Up
                   </Link>
                 </>
-              ) : role === "admin" ? (
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="w-full rounded-2xl bg-[#1e3a5f] px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-[#16314f]"
-                >
-                  Logout
-                </button>
               ) : (
-                <button
-                  type="button"
-                  className="flex w-full items-center gap-3 rounded-2xl border border-[#eadfce] bg-white px-4 py-3 text-left"
+                <Link
+                  href="/profile"
                   onClick={() => setMenuOpen(false)}
+                  className="flex w-full items-center gap-3 rounded-2xl border border-[#eadfce] bg-white px-4 py-3 text-left transition hover:bg-[#faf7f2]"
                 >
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#1e3a5f] text-white">
-                    {initials || <CircleUserRound className="h-6 w-6" />}
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#1e3a5f] text-white">
+                    {avatarSrc ? (
+                      <Image
+                        src={avatarSrc}
+                        alt={`${user?.firstName} ${user?.lastName}`.trim()}
+                        width={44}
+                        height={44}
+                        className="h-full w-full object-cover"
+                        onError={() => setAvatarFailed(true)}
+                      />
+                    ) : (
+                      <span className="text-xs font-semibold tracking-[0.08em]">
+                        {initials || "--"}
+                      </span>
+                    )}
                   </span>
                   <span className="min-w-0">
                     <span className="block truncate text-sm font-medium text-[#1e3a5f]">
@@ -254,7 +258,7 @@ export default function Navbar() {
                       {user?.email}
                     </span>
                   </span>
-                </button>
+                </Link>
               )}
             </div>
           </div>

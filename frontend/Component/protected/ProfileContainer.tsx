@@ -1,9 +1,7 @@
 "use client";
 import React from "react";
 
-/**
- * ProfileContainer - placeholder protected area container.
- */
+
 
 export default function ProfileContainer() {
   return (

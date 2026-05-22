@@ -1,8 +1,15 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import Link from "next/link";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { Eye, EyeOff, Upload } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+
+import { savePendingSignup } from "../../../../lib/registerFlow";
 
 const registerSchema = z
   .object({
@@ -11,6 +18,8 @@ const registerSchema = z
     email: z.string().email("Enter a valid email address."),
     password: z.string().min(8, "Password must be at least 8 characters."),
     confirmPassword: z.string().min(8, "Confirm your password."),
+    profilePicture: z.any().optional(),
+    logo: z.any().optional(),
   })
   .refine((values) => values.password === values.confirmPassword, {
     message: "Passwords do not match.",
@@ -25,6 +34,7 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
  * @returns {JSX.Element} The register form.
  */
 export default function RegisterForm() {
+  const router = useRouter();
   const {
     register,
     handleSubmit,
@@ -37,123 +47,300 @@ export default function RegisterForm() {
       email: "",
       password: "",
       confirmPassword: "",
+      profilePicture: undefined,
+      logo: undefined,
     },
   });
 
-  const onSubmit = handleSubmit(async () => {
-    window.alert("Registered (mock)");
+  const [profilePicturePreview, setProfilePicturePreview] = useState<string>();
+  const [logoPreview, setLogoPreview] = useState<string>();
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  useEffect(
+    () => () => {
+      if (profilePicturePreview) {
+        URL.revokeObjectURL(profilePicturePreview);
+      }
+
+      if (logoPreview) {
+        URL.revokeObjectURL(logoPreview);
+      }
+    },
+    [logoPreview, profilePicturePreview],
+  );
+
+  const onSubmit = handleSubmit(async (data) => {
+    savePendingSignup({
+      firstName: data.firstName,
+      lastName: data.lastName,
+      email: data.email,
+      password: data.password,
+    });
+
+    router.push("/register/verify");
   });
+
+  const filePreviewClassName =
+    "flex h-36 cursor-pointer items-center justify-center overflow-hidden rounded-[10px] border border-[#e6e1da] bg-white text-center transition hover:border-[#cfc7be]";
 
   return (
     <form
       onSubmit={onSubmit}
-      className="space-y-4 rounded-3xl border border-black/5 bg-white p-6 shadow-[0_20px_50px_rgba(15,23,42,0.08)]"
+      className="mt-7 w-full rounded-[18px] border border-[#e8e2db] bg-white px-6 py-7 shadow-[0_1px_3px_rgba(15,23,42,0.03),0_10px_30px_rgba(15,23,42,0.05)] sm:px-7"
+      style={{ maxWidth: 560 }}
     >
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
+      <div className="grid gap-5 sm:grid-cols-2 sm:gap-x-4 sm:gap-y-6">
+        <div className="space-y-2">
           <label
-            className="mb-2 block text-sm font-medium text-slate-700"
+            className="block text-[0.92rem] font-semibold text-[#2f2c29]"
             htmlFor="firstName"
           >
-            First name
+            First Name
           </label>
           <input
             id="firstName"
-            className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-slate-400"
+            placeholder="John"
+            className="h-12 w-full rounded-[10px] border border-[#e6e1da] bg-white px-4 text-[0.98rem] text-[#2f2c29] outline-none transition placeholder:text-[#b2ada7] focus:border-[#b4aba1]"
             {...register("firstName")}
           />
           {errors.firstName ? (
-            <p className="mt-2 text-sm text-red-600">
-              {errors.firstName.message}
-            </p>
+            <p className="text-sm text-red-600">{errors.firstName.message}</p>
           ) : null}
         </div>
-        <div>
+        <div className="space-y-2">
           <label
-            className="mb-2 block text-sm font-medium text-slate-700"
+            className="block text-[0.92rem] font-semibold text-[#2f2c29]"
             htmlFor="lastName"
           >
-            Last name
+            Last Name
           </label>
           <input
             id="lastName"
-            className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-slate-400"
+            placeholder="Doe"
+            className="h-12 w-full rounded-[10px] border border-[#e6e1da] bg-white px-4 text-[0.98rem] text-[#2f2c29] outline-none transition placeholder:text-[#b2ada7] focus:border-[#b4aba1]"
             {...register("lastName")}
           />
           {errors.lastName ? (
-            <p className="mt-2 text-sm text-red-600">
-              {errors.lastName.message}
-            </p>
+            <p className="text-sm text-red-600">{errors.lastName.message}</p>
           ) : null}
         </div>
       </div>
 
-      <div>
+      <div className="space-y-2 pt-1">
         <label
-          className="mb-2 block text-sm font-medium text-slate-700"
+          className="block text-[0.92rem] font-semibold text-[#2f2c29]"
           htmlFor="email"
         >
-          Email
+          Email Address
         </label>
         <input
           id="email"
           type="email"
-          className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-slate-400"
+          placeholder="your@email.com"
+          className="h-12 w-full rounded-[10px] border border-[#e6e1da] bg-white px-4 text-[0.98rem] text-[#2f2c29] outline-none transition placeholder:text-[#b2ada7] focus:border-[#b4aba1]"
           {...register("email")}
         />
         {errors.email ? (
-          <p className="mt-2 text-sm text-red-600">{errors.email.message}</p>
+          <p className="text-sm text-red-600">{errors.email.message}</p>
         ) : null}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
+      <div className="space-y-2 pt-1">
+        <label
+          className="block text-[0.92rem] font-semibold text-[#2f2c29]"
+          htmlFor="profilePicture"
+        >
+          Profile Picture
+        </label>
+        <label htmlFor="profilePicture" className={filePreviewClassName}>
+          {profilePicturePreview ? (
+            <Image
+              src={profilePicturePreview}
+              alt="Profile picture preview"
+              width={500}
+              height={288}
+              unoptimized
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="space-y-2 text-[#b2ada7]">
+              <Upload className="mx-auto h-5 w-5" />
+              <p className="text-[0.88rem] font-medium">Profile picture</p>
+            </div>
+          )}
+        </label>
+        <input
+          id="profilePicture"
+          type="file"
+          accept="image/*"
+          className="sr-only"
+          {...register("profilePicture", {
+            onChange: (event) => {
+              const file = event.target.files?.[0];
+              setProfilePicturePreview((current) => {
+                if (current) {
+                  URL.revokeObjectURL(current);
+                }
+
+                return file ? URL.createObjectURL(file) : undefined;
+              });
+            },
+          })}
+        />
+      </div>
+
+      <div className="mt-5 space-y-2">
+        <label
+          className="block text-[0.92rem] font-semibold text-[#2f2c29]"
+          htmlFor="logo"
+        >
+          Funeral Home Logo
+        </label>
+        <label htmlFor="logo" className={filePreviewClassName}>
+          {logoPreview ? (
+            <Image
+              src={logoPreview}
+              alt="Funeral home logo preview"
+              width={500}
+              height={288}
+              unoptimized
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="space-y-2 text-[#b2ada7]">
+              <Upload className="mx-auto h-5 w-5" />
+              <p className="text-[0.88rem] font-medium">Funeral Home Logo</p>
+            </div>
+          )}
+        </label>
+        <input
+          id="logo"
+          type="file"
+          accept="image/*"
+          className="sr-only"
+          {...register("logo", {
+            onChange: (event) => {
+              const file = event.target.files?.[0];
+              setLogoPreview((current) => {
+                if (current) {
+                  URL.revokeObjectURL(current);
+                }
+
+                return file ? URL.createObjectURL(file) : undefined;
+              });
+            },
+          })}
+        />
+      </div>
+
+      <div className="grid gap-5 pt-5 sm:grid-cols-2 sm:gap-x-4 sm:gap-y-6">
+        <div className="space-y-2">
           <label
-            className="mb-2 block text-sm font-medium text-slate-700"
+            className="block text-[0.92rem] font-semibold text-[#2f2c29]"
             htmlFor="password"
           >
             Password
           </label>
-          <input
-            id="password"
-            type="password"
-            className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-slate-400"
-            {...register("password")}
-          />
+          <div className="relative">
+            <input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              placeholder="Create a password"
+              className="h-12 w-full rounded-[10px] border border-[#e6e1da] bg-white px-4 pr-11 text-[0.98rem] text-[#2f2c29] outline-none transition placeholder:text-[#b2ada7] focus:border-[#b4aba1]"
+              {...register("password")}
+            />
+            <button
+              type="button"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              onClick={() => setShowPassword((value) => !value)}
+              className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-[#8e857c] transition hover:text-[#2f2c29]"
+            >
+              {showPassword ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </button>
+          </div>
           {errors.password ? (
-            <p className="mt-2 text-sm text-red-600">
-              {errors.password.message}
-            </p>
+            <p className="text-sm text-red-600">{errors.password.message}</p>
           ) : null}
+          <p className="text-[0.8rem] leading-5 text-[#6e6963]">
+            At least 8 characters with letters and numbers
+          </p>
         </div>
-        <div>
+        <div className="space-y-2">
           <label
-            className="mb-2 block text-sm font-medium text-slate-700"
+            className="block text-[0.92rem] font-semibold text-[#2f2c29]"
             htmlFor="confirmPassword"
           >
-            Confirm password
+            Confirm Password
           </label>
-          <input
-            id="confirmPassword"
-            type="password"
-            className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-slate-400"
-            {...register("confirmPassword")}
-          />
+          <div className="relative">
+            <input
+              id="confirmPassword"
+              type={showConfirmPassword ? "text" : "password"}
+              placeholder="Confirm your password"
+              className="h-12 w-full rounded-[10px] border border-[#e6e1da] bg-white px-4 pr-11 text-[0.98rem] text-[#2f2c29] outline-none transition placeholder:text-[#b2ada7] focus:border-[#b4aba1]"
+              {...register("confirmPassword")}
+            />
+            <button
+              type="button"
+              aria-label={
+                showConfirmPassword ? "Hide password" : "Show password"
+              }
+              onClick={() => setShowConfirmPassword((value) => !value)}
+              className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-[#8e857c] transition hover:text-[#2f2c29]"
+            >
+              {showConfirmPassword ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </button>
+          </div>
           {errors.confirmPassword ? (
-            <p className="mt-2 text-sm text-red-600">
+            <p className="text-sm text-red-600">
               {errors.confirmPassword.message}
             </p>
           ) : null}
         </div>
       </div>
 
+      <div className="mt-5 flex items-start gap-2.5 text-[0.88rem] text-[#4a4743]">
+        <input
+          id="terms"
+          type="checkbox"
+          defaultChecked
+          className="mt-0.5 h-4 w-4 rounded border-[#9b9187] accent-[#1e3a5f]"
+        />
+        <label htmlFor="terms" className="leading-6">
+          I agree to the{" "}
+          <Link href="#" className="font-medium text-[#1e3a5f]">
+            Terms of Service
+          </Link>{" "}
+          and{" "}
+          <Link href="#" className="font-medium text-[#1e3a5f]">
+            Privacy Policy
+          </Link>
+        </label>
+      </div>
+
       <button
         disabled={isSubmitting}
-        className="w-full rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+        className="mt-4 h-11 w-full rounded-[8px] bg-[#1e3a5f] text-[0.95rem] font-medium text-white transition hover:bg-[#17304f] disabled:cursor-not-allowed disabled:opacity-60"
         type="submit"
       >
-        Create account
+        Create Account
       </button>
+
+      <p className="mt-4 text-center text-[0.9rem] text-[#7b746d]">
+        Already have an account?{" "}
+        <Link href="/login" className="font-medium text-[#1e3a5f]">
+          Sign in
+        </Link>
+      </p>
     </form>
   );
 }

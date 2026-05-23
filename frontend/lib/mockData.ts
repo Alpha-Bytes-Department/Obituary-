@@ -88,7 +88,7 @@ export const mockObituaries: ObituaryMock[] = [
     dateOfBirth: "1938-03-14",
     dateOfDeath: "2026-05-01",
     age: 88,
-    location: { city: "Dhaka" },
+    location: { city: "Dhaka", country: "Bangladesh" },
     headline: "Beloved father and teacher",
     excerpt:
       "John Doe peacefully passed away after a life of service, learning, and quiet generosity.",
@@ -118,7 +118,7 @@ export const mockObituaries: ObituaryMock[] = [
     dateOfBirth: "1941-09-03",
     dateOfDeath: "2025-11-10",
     age: 84,
-    location: { city: "Chittagong" },
+    location: { city: "Chittagong", country: "Bangladesh" },
     headline: "Cherished community leader",
     excerpt:
       "Aisha Khan devoted her life to community care, literacy, and family support.",
@@ -147,7 +147,7 @@ export const mockObituaries: ObituaryMock[] = [
     dateOfBirth: "1956-02-10",
     dateOfDeath: "2026-04-18",
     age: 70,
-    location: { city: "Sylhet" },
+    location: { city: "Sylhet", country: "UK" },
     headline: "A life full of songs and stories",
     excerpt:
       "Rahim Ali was known for his storytelling, calm presence, and unwavering kindness.",
@@ -172,7 +172,7 @@ export const mockObituaries: ObituaryMock[] = [
     dateOfBirth: "1964-12-11",
     dateOfDeath: "2026-05-12",
     age: 61,
-    location: { city: "Cumilla" },
+    location: { city: "Cumilla", country: "Ireland" },
     headline: "A steadfast voice for local families",
     excerpt:
       "Mina Rahman helped build neighborhood programs that supported caregivers, students, and elders.",
@@ -197,7 +197,7 @@ export const mockObituaries: ObituaryMock[] = [
     dateOfBirth: "1972-06-25",
     dateOfDeath: "2024-08-22",
     age: 52,
-    location: { city: "Rajshahi" },
+    location: { city: "Rajshahi", country: "Bangladesh" },
     headline: "Treasured mentor and artist",
     excerpt:
       "Nusrat Jahan created spaces where young people felt seen, heard, and encouraged.",
@@ -221,7 +221,7 @@ export const mockObituaries: ObituaryMock[] = [
     dateOfBirth: "1935-01-19",
     dateOfDeath: "2023-02-06",
     age: 88,
-    location: { city: "Khulna" },
+    location: { city: "Khulna", country: "Bangladesh" },
     headline: "A lifelong advocate for dignity and care",
     excerpt:
       "Salma Begum was known for her generosity, her calm voice, and the steady way she cared for her neighbors.",
@@ -244,7 +244,7 @@ export const mockObituaries: ObituaryMock[] = [
     dateOfBirth: "1948-07-28",
     dateOfDeath: "2022-10-17",
     age: 74,
-    location: { city: "Barishal" },
+    location: { city: "Barishal", country: "UK" },
     headline: "Remembered for mentoring a generation",
     excerpt:
       "Farid Hossain helped young people find their voice through music, study, and patient encouragement.",
@@ -267,7 +267,7 @@ export const mockObituaries: ObituaryMock[] = [
     dateOfBirth: "1959-11-04",
     dateOfDeath: "2021-04-21",
     age: 61,
-    location: { city: "Mymensingh" },
+    location: { city: "Mymensingh", country: "Ireland" },
     headline: "An artist who turned memory into care",
     excerpt:
       "Noor Akter created spaces where stories, art, and kindness could live side by side.",

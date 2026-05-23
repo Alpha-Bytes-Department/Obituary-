@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Copy } from "lucide-react";
 import { toast } from "sonner";
 
@@ -14,7 +14,21 @@ import { Button } from "../../../components/ui/button";
 export default function CouponStatusCard() {
   const [couponRippleKey, setCouponRippleKey] = useState(0);
   const [couponSubmitted, setCouponSubmitted] = useState(false);
+  const [showCouponButton, setShowCouponButton] = useState(true);
   const couponCode = "XYZ-2046";
+
+  useEffect(() => {
+    if (!couponSubmitted) {
+      setShowCouponButton(true);
+      return undefined;
+    }
+
+    const timer = window.setTimeout(() => {
+      setShowCouponButton(false);
+    }, 320);
+
+    return () => window.clearTimeout(timer);
+  }, [couponSubmitted]);
 
   /**
    * Submits the coupon request and reveals the eligibility card.
@@ -42,7 +56,7 @@ export default function CouponStatusCard() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4  ">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="font-heading text-[1.7rem] tracking-[-0.03em] text-[#2b2621]">
@@ -53,18 +67,24 @@ export default function CouponStatusCard() {
           </p>
         </div>
 
-        <Button
-          type="button"
-          onClick={handleCouponRequest}
-          className="relative h-11 overflow-hidden rounded-md bg-[#233f68] px-5 text-[0.95rem] font-medium text-white shadow-[0_8px_18px_rgba(35,63,104,0.2)] transition-transform duration-200 hover:-translate-y-0.5 hover:bg-[#1b3254] active:scale-[0.98]"
-        >
-          <span
-            key={couponRippleKey}
-            aria-hidden="true"
-            className="absolute inset-0 rounded-[inherit] bg-white/20 animate-waterdrop"
-          />
-          <span className="relative">Apply for free Coupon</span>
-        </Button>
+        {showCouponButton ? (
+          <Button
+            type="button"
+            onClick={handleCouponRequest}
+            className={`relative h-11 overflow-hidden rounded-md bg-[#233f68] px-5 text-[0.95rem] font-medium text-white shadow-[0_8px_18px_rgba(35,63,104,0.2)] transition-all duration-500 ease-out hover:-translate-y-0.5 hover:bg-[#1b3254] active:scale-[0.98] ${
+              couponSubmitted
+                ? "pointer-events-none translate-y-2 scale-95 opacity-0"
+                : "opacity-100"
+            }`}
+          >
+            <span
+              key={couponRippleKey}
+              aria-hidden="true"
+              className="absolute inset-0 rounded-[inherit] bg-white/20 animate-waterdrop"
+            />
+            <span className="relative">Apply for free Coupon</span>
+          </Button>
+        ) : null}
       </div>
 
       {couponSubmitted ? (

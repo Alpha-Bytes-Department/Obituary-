@@ -14,7 +14,7 @@ import type { DashboardUser } from "./types";
  */
 export default function ProfileHeaderCard({ user }: { user: DashboardUser }) {
   return (
-    <section className="overflow-hidden rounded-md border border-[#e5dfd7] bg-white shadow-[0_12px_32px_rgba(15,23,42,0.08)]">
+    <section className="overflow-hidden rounded-md border  border-[#e5dfd7] bg-white shadow-[0_12px_32px_rgba(15,23,42,0.08)]">
       <div className="grid gap-5 p-4 sm:p-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-center">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
           <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-full border border-[#dfd8cf] bg-[#f2eee8] shadow-sm sm:h-28 sm:w-28">

@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { ArrowRight, CalendarDays, MapPin } from "lucide-react";
 
 import {
   fallbackMemorableQuotes,
@@ -22,6 +23,24 @@ export default function ObituaryCard({
   variant = "default",
 }: ObituaryCardProps) {
   const heroImage = item.images[0] ?? "/placeholders/home-hero.svg";
+  const formatCalendarDate = (date: string) =>
+    new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }).format(new Date(date));
+  const birthDate = item.dateOfBirth
+    ? formatCalendarDate(item.dateOfBirth)
+    : "Unknown";
+  const deathDate = formatCalendarDate(item.dateOfDeath);
+  const locationLabel = [
+    item.location.city,
+    item.location.state,
+    item.location.country,
+  ]
+    .filter(Boolean)
+    .join(", ");
+  const ageLabel = item.age ?? undefined;
 
   if (variant === "memorable") {
     const fallbackQuote =
@@ -33,7 +52,7 @@ export default function ObituaryCard({
     const quoteAuthor = item.memorialQuote ? null : fallbackQuote.author;
 
     return (
-      <article className="h-full overflow-hidden rounded-[1.5rem] border border-[#d6d1c6] bg-white shadow-[0_2px_8px_rgba(15,23,42,0.06)]">
+      <article className="h-full overflow-hidden rounded-md border border-[#d6d1c6] bg-white shadow-[0_2px_8px_rgba(15,23,42,0.06)]">
         <div className="grid h-full grid-cols-1 md:grid-cols-[1.08fr_0.92fr]">
           <div className="order-2 flex flex-col justify-center px-6 py-7 text-center md:order-1 md:px-8 md:py-8 md:text-left lg:px-10 lg:py-10">
             <div className="space-y-3 md:space-y-4">
@@ -71,8 +90,8 @@ export default function ObituaryCard({
   }
 
   return (
-    <article className="group h-full overflow-hidden rounded-[1.5rem] border border-black/5 bg-white shadow-[0_14px_32px_rgba(15,23,42,0.09)] transition hover:-translate-y-1 hover:shadow-[0_18px_45px_rgba(15,23,42,0.13)]">
-      <div className="relative aspect-4/3 overflow-hidden bg-linear-to-br from-[#e7e3dc] via-white to-[#f0ece5]">
+    <article className="group h-full overflow-hidden rounded-md border border-black/5 bg-white shadow-[0_14px_32px_rgba(15,23,42,0.09)] transition hover:-translate-y-1 hover:shadow-[0_18px_45px_rgba(15,23,42,0.13)]">
+      <div className="relative aspect-3/3 overflow-hidden bg-linear-to-br from-[#e7e3dc] via-white to-[#f0ece5]">
         <Image
           src={heroImage}
           alt={`${item.deceasedFirstName} ${item.deceasedLastName}`}
@@ -82,32 +101,36 @@ export default function ObituaryCard({
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.02)_0%,rgba(15,23,42,0)_50%,rgba(15,23,42,0.08)_100%)]" />
       </div>
 
-      <div className="space-y-3 border-t border-[#e8e0d4] p-5">
-        <div className="space-y-1 text-center">
-          <h3 className="font-heading text-xl font-semibold tracking-tight text-[#16345a]">
+      <div className="space-y-3 border-t border-[#e8e0d4] p-5 text-left">
+        <div className="space-y-1">
+          <h3 className="font-heading text-xl font-bold tracking-tight text-[#16345a]">
             {item.deceasedFirstName} {item.deceasedLastName}
           </h3>
-          <p className="font-sans text-sm text-[#16345a]/90">
-            {item.dateOfDeath}
-          </p>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-base text-slate-500">
+            <span className="inline-flex items-center gap-1.5">
+              <CalendarDays className="h-3.5 w-3.5" />
+              {item.dateOfBirth ? `${birthDate} - ${deathDate}` : deathDate}
+            </span>
+          </div>
         </div>
-
-        <p className="font-sans text-center text-sm leading-6 text-slate-700">
-          {item.headline}
+          <div className="inline-flex items-center gap-1.5 text-base text-slate-500">
+            <MapPin className="h-3.5 w-3.5" />
+            {locationLabel}
+          </div>
+       
+        <p className="font-sans text-sm leading-6 text-slate-700">
+          {item.biography?.length && item.biography.length > 50
+            ? `${item.biography?.slice(0, 50)}...`
+            : item.biography}
         </p>
 
-        <div className="flex items-center justify-center gap-2 pt-1">
-          <span className="font-sans text-xs uppercase tracking-[0.24em] text-slate-400">
-            {item.location.city}
-          </span>
-          <span className="h-1 w-1 rounded-full bg-slate-300" />
-          <Link
-            href={`/obituary/${item.id}`}
-            className="font-sans text-sm font-semibold text-[#16345a] underline decoration-slate-300 underline-offset-4 transition hover:decoration-[#16345a]"
-          >
-            View story
-          </Link>
-        </div>
+        <Link
+          href={`/obituary/${item.id}`}
+          className="inline-flex items-center gap-2 font-sans text-sm font-semibold text-[#16345a] transition hover:text-[#0f2743]"
+        >
+          View Memorial
+          <ArrowRight className="h-4 w-4" />
+        </Link>
       </div>
     </article>
   );

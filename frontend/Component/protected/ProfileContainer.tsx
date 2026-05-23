@@ -130,8 +130,8 @@ export default function ProfileContainer() {
 
   return (
     <main
-      className="mx-auto flex w-full flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8"
-      style={{ maxWidth: "min(1600px, 96vw)" }}
+      className=" w-full flex flex-col gap-6 px-4 pb-6 sm:px-6 lg:px-8"
+     
     >
       <ProfileHeaderCard user={displayUser} />
       <CouponStatusCard />

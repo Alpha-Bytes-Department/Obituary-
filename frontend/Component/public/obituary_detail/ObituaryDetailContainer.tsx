@@ -1,4 +1,8 @@
-import { mockObituaries } from "../../../lib/mockData";
+"use client";
+
+import { useEffect, useState } from "react";
+
+import { mockObituaries, type ObituaryMock } from "../../../lib/mockData";
 
 import ImageSlider from "./ImageSlider";
 import CondolenceSection from "./CondolenceSection";
@@ -17,12 +21,19 @@ interface ObituaryDetailContainerProps {
 export default function ObituaryDetailContainer({
   id,
 }: ObituaryDetailContainerProps) {
-  const item = mockObituaries.find((entry) => entry.id === id);
+  const [item, setItem] = useState<ObituaryMock | null>(null);
+
+  useEffect(() => {
+    console.log("Fetching obituary details for id:", id);
+
+    const mockItem = mockObituaries.find((entry) => entry.id === id);
+    setItem(mockItem ?? mockObituaries[0] ?? null);
+  }, [id]);
 
   if (!item) {
     return (
       <div className="rounded-2xl border border-black/5 bg-white p-6 text-slate-600">
-        Not found
+        Loading memorial details...
       </div>
     );
   }
@@ -49,7 +60,7 @@ export default function ObituaryDetailContainer({
             Biography
           </h2>
           <p className="mt-4 text-sm leading-7 text-slate-600">
-            {item.excerpt}
+            {item.biography ?? item.excerpt}
           </p>
         </div>
 

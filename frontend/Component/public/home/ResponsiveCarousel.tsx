@@ -27,13 +27,24 @@ function getTrackHeight(
   breakpoint: Breakpoint,
   variant: CarouselVariant,
 ): number {
-  if (breakpoint === "mobile") return variant === "memorable" ? 620 : 540;
+  if (breakpoint === "mobile") return variant === "memorable" ? 620 : 580;
   if (variant === "memorable") return breakpoint === "desktop" ? 380 : 360;
-  return breakpoint === "desktop" ? 520 : 440;
+  return breakpoint === "desktop" ? 580 : 500;
 }
 
-function getSlideWidth(breakpoint: Breakpoint, isCenter: boolean): string {
-  if (breakpoint === "desktop") return isCenter ? "38%" : "29%";
+function getSlideWidth(
+  breakpoint: Breakpoint,
+  isCenter: boolean,
+  variant: CarouselVariant,
+): string {
+  if (breakpoint === "desktop") {
+    if (variant === "memorable") {
+      return isCenter ? "42%" : "26%";
+    }
+
+    return isCenter ? "38%" : "29%";
+  }
+
   if (breakpoint === "tablet") return "48%";
   return "100%";
 }
@@ -118,7 +129,7 @@ export default function ResponsiveCarousel({
   const trackStyle: CSSProperties = isMobile
     ? { transform: `translateY(-${mobileOffset}px)` }
     : {
-        transform: `translateX(calc(-1 * ${current} * (${getSlideWidth(breakpoint, false)} + ${GAP}px)))`,
+        transform: `translateX(calc(-1 * ${current} * (${getSlideWidth(breakpoint, false, variant)} + ${GAP}px)))`,
       };
 
   return (
@@ -151,7 +162,7 @@ export default function ResponsiveCarousel({
                   breakpoint === "desktop" && index === current + 1;
                 const isFocal =
                   breakpoint === "desktop" ? isCenter : index === current;
-                const width = getSlideWidth(breakpoint, isCenter);
+                const width = getSlideWidth(breakpoint, isCenter, variant);
 
                 return (
                   <div
@@ -162,10 +173,11 @@ export default function ResponsiveCarousel({
                       // height = 100% of the fixed wrapper — never changes, no jump
                       height: "100%",
                       opacity: inView ? (isFocal ? 1 : 0.55) : 0.2,
-                      // Center slide: scale up visually without touching layout
                       transform:
-                        isFocal && breakpoint === "desktop"
-                          ? "scale(1.06)"
+                        breakpoint === "desktop" && variant === "memorable"
+                          ? isFocal
+                            ? "scale(1.08, 1.04)"
+                            : "scale(0.95, 0.92)"
                           : "scale(1)",
                       transformOrigin: "center center",
                     }}

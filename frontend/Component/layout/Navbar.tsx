@@ -30,7 +30,7 @@ const adminLinks: NavItem[] = [
 const publicLinks: NavItem[] = [
   { label: "Home", href: "/" },
   { label: "Find a Memorial", href: "/obituary" },
-  { label: "Memorial", href: "/obituary" },
+  { label: "Memorial", href: "/memorial" },
 ];
 
 export default function Navbar() {

@@ -1,9 +1,9 @@
 import ObituaryDetailContainer from "../../../../Component/public/obituary_detail/ObituaryDetailContainer";
 
 interface ObituaryDetailPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 /**
@@ -12,8 +12,10 @@ interface ObituaryDetailPageProps {
  * @param {ObituaryDetailPageProps} props - Route props.
  * @returns {JSX.Element} The obituary detail container.
  */
-export default function ObituaryDetailPage({
+export default async function ObituaryDetailPage({
   params,
 }: ObituaryDetailPageProps) {
-  return <ObituaryDetailContainer id={params.id} />;
+  const { id } = await params;
+
+  return <ObituaryDetailContainer id={id} />;
 }

@@ -36,3 +36,12 @@ exports.createRefreshToken = (payload) => {
 exports.verifyToken = (token, secret) => {
   return jwt.verify(token, secret);
 };
+
+/**
+ * Create a six digit OTP code.
+ *
+ * @returns {string}
+ */
+exports.createOtpCode = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};

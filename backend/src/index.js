@@ -1,24 +1,29 @@
 require("dotenv").config();
 const express = require("express");
-const cors = require("cors");
-const cookieParser = require("cookie-parser");
-const helmet = require("helmet");
-const morgan = require("morgan");
+const mongoose = require("mongoose");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
+const MONGO_URI = (process.env.MONGO_URI || "").trim();
 
-// Basic middleware
-app.use(helmet());
-app.use(morgan("dev"));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
+const { connectDatabase, dbStatusString } = require("./config/db");
+const { registerMiddlewares } = require("./middlewares");
+const { registerRoutes } = require("./routes");
 
-// Allow all origins in development. Configure properly for production.
-app.use(cors({ origin: "*" }));
+// ================== Global Middleware ==================
+registerMiddlewares(app);
 
-app.get("/api/health", (req, res) => res.json({ status: "ok" }));
+// ================== Health Check ==================
+app.get("/api/health", (req, res) => {
+  const state = mongoose.connection.readyState;
+  res.json({ status: "ok", db: dbStatusString(state) });
+});
+
+// ================== Database Connection ==================
+connectDatabase(MONGO_URI);
+
+// ================== API Routes ==================
+registerRoutes(app);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

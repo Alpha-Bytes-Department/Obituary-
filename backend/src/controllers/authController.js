@@ -14,24 +14,14 @@ const { sendMail } = require("../config/mailer");
 const OTP_EXPIRY_MINUTES = 10;
 const RESET_TOKEN_EXPIRY_MINUTES = 15;
 
-/**
- * Normalize an email address for lookup.
- *
- * @param {string} email
- * @returns {string}
- */
+// ========= Email normalizer==========
 function normalizeEmail(email) {
   return String(email || "")
     .trim()
     .toLowerCase();
 }
 
-/**
- * Build access and refresh tokens for a user.
- *
- * @param {object} user
- * @returns {{ accessToken: string, refreshToken: string }}
- */
+// ============= Access & Refresh Token builder =============
 function buildTokenPair(user) {
   const payload = {
     id: user._id.toString(),
@@ -45,13 +35,7 @@ function buildTokenPair(user) {
   };
 }
 
-/**
- * Persist a refresh token and send the token pair to the client.
- *
- * @param {import("express").Response} res
- * @param {object} user
- * @returns {Promise<void>}
- */
+// ================= Common function to respond user with tokens =================
 async function respondWithAuthTokens(res, user) {
   const tokens = buildTokenPair(user);
   user.refreshToken = tokens.refreshToken;
@@ -71,19 +55,14 @@ async function respondWithAuthTokens(res, user) {
   });
 }
 
-/**
- * Register a user by staging the account and sending a 6-digit OTP.
- *
- * @param {import("express").Request} req
- * @param {import("express").Response} res
- * @returns {Promise<void>}
- */
+// ================= Registration =================
 exports.register = async (req, res) => {
   try {
-    const { firstName, lastName, email, password } = req.body;
+    const { firstName, lastName, email, password, profilePhotoUrl, address } =
+      req.body;
     const normalizedEmail = normalizeEmail(email);
 
-    if (!firstName || !lastName || !normalizedEmail || !password) {
+    if (!firstName || !lastName || !normalizedEmail || !password || !address) {
       return res
         .status(400)
         .json({ message: "All registration fields are required" });
@@ -115,8 +94,15 @@ exports.register = async (req, res) => {
     await sendMail({
       to: normalizedEmail,
       subject: "Your registration OTP",
-      text: `Your OTP code is ${otpCode}. It expires in ${OTP_EXPIRY_MINUTES} minutes.`,
-      html: `<p>Your OTP code is <strong>${otpCode}</strong>.</p><p>It expires in ${OTP_EXPIRY_MINUTES} minutes.</p>`,
+      title: "verification code",
+      bodyIntro:
+        "Thank you for registering with Funeral Home. To complete your sign-up and begin honoring the memories that matter, please use the one-time passcode below.",
+      otpCode,
+      expiresInMinutes: OTP_EXPIRY_MINUTES,
+      bodyOutro:
+        "Enter this code on the registration page to verify your email address. Once verified, you can submit memorials, share photos, and celebrate the lives of those you love.",
+      notice:
+        "If you did not create an account with Funeral Home, please ignore this email. Your address will not be registered and no action is required.",
     });
 
     return res.status(200).json({
@@ -130,13 +116,7 @@ exports.register = async (req, res) => {
   }
 };
 
-/**
- * Verify the OTP and create the user account.
- *
- * @param {import("express").Request} req
- * @param {import("express").Response} res
- * @returns {Promise<void>}
- */
+// ================= OTP Verification =================
 exports.verifyRegistrationOtp = async (req, res) => {
   try {
     const { email, otp } = req.body;
@@ -181,7 +161,7 @@ exports.verifyRegistrationOtp = async (req, res) => {
     const tokens = buildTokenPair(createdUser);
     createdUser.refreshToken = tokens.refreshToken;
     await createdUser.save();
-    await PendingRegistration.deleteOne({ _id: pendingRegistration._id });
+    await PendingRegistration.deleteOne({ email: pendingRegistration.email });
 
     return res.status(201).json({
       message: "Registration completed",
@@ -201,13 +181,7 @@ exports.verifyRegistrationOtp = async (req, res) => {
   }
 };
 
-/**
- * Authenticate an existing user and issue a new token pair.
- *
- * @param {import("express").Request} req
- * @param {import("express").Response} res
- * @returns {Promise<void>}
- */
+// ================= Login =================
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -239,13 +213,7 @@ exports.login = async (req, res) => {
   }
 };
 
-/**
- * Request a password reset token and send it by email.
- *
- * @param {import("express").Request} req
- * @param {import("express").Response} res
- * @returns {Promise<void>}
- */
+// ================= Password Reset phase-1 =================
 exports.requestPasswordReset = async (req, res) => {
   try {
     const { email } = req.body;
@@ -280,8 +248,15 @@ exports.requestPasswordReset = async (req, res) => {
     await sendMail({
       to: normalizedEmail,
       subject: "Reset your password",
-      text: `Use this link to reset your password: ${resetUrl}`,
-      html: `<p>Use this link to reset your password:</p><p><a href="${resetUrl}">${resetUrl}</a></p>`,
+      title: "password reset link",
+      bodyIntro:
+        "We received a request to reset your Funeral Home password. Use the secure link below to continue.",
+      ctaUrl: resetUrl,
+      ctaLabel: "Reset Password",
+      bodyOutro:
+        "If you did not request a password reset, you can safely ignore this email and no changes will be made.",
+      notice:
+        "If this request was not made by you, no further action is needed.",
     });
 
     return res
@@ -295,13 +270,7 @@ exports.requestPasswordReset = async (req, res) => {
   }
 };
 
-/**
- * Validate a password reset token and update the user's password.
- *
- * @param {import("express").Request} req
- * @param {import("express").Response} res
- * @returns {Promise<void>}
- */
+// ================= Password Reset phase-2 =================
 exports.resetPassword = async (req, res) => {
   try {
     const { userId, token } = req.params;
@@ -356,17 +325,11 @@ exports.resetPassword = async (req, res) => {
   }
 };
 
-/**
- * Validate a refresh token and rotate both access and refresh tokens.
- *
- * @param {import("express").Request} req
- * @param {import("express").Response} res
- * @returns {Promise<void>}
- */
+// ================= Refresh Expired Token =================
 exports.refreshToken = async (req, res) => {
   try {
     const incomingToken = req.body.refreshToken || req.cookies?.refreshToken;
-
+    console.log(`Incoming refresh token: ${incomingToken}`);
     if (!incomingToken) {
       return res.status(400).json({ message: "Refresh token is required" });
     }
@@ -377,6 +340,7 @@ exports.refreshToken = async (req, res) => {
     );
     const user = await User.findById(decoded.id);
 
+    console.log(`Found user: ${user ? user._id : "Not found"}`);
     if (!user || user.refreshToken !== incomingToken) {
       return res.status(401).json({ message: "Invalid refresh token" });
     }
@@ -398,6 +362,6 @@ exports.refreshToken = async (req, res) => {
   }
 };
 
-exports.test= async (req,res)=>{
-  return res.status(200).json({message:"Auth route is working"})
-}
+exports.test = async (req, res) => {
+  return res.status(200).json({ message: "Auth route is working" });
+};

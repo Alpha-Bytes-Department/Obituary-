@@ -1,9 +1,14 @@
 const express = require("express");
 const router = express.Router();
 const authController = require("../controllers/authController");
-  
-router.get('/',authController.test);
-router.post("/register", authController.register);
+const upload = require("../middlewares/uploadMiddleware");
+
+router.get("/", authController.test);
+router.post(
+  "/register",
+  upload.single("profilePhoto"),
+  authController.register,
+);
 router.post("/verify-registration", authController.verifyRegistrationOtp);
 router.post("/login", authController.login);
 router.post("/forgot-password", authController.requestPasswordReset);

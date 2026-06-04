@@ -15,6 +15,14 @@ const PendingRegistrationSchema = new mongoose.Schema(
     otpHash: { type: String, required: true },
     otpExpiresAt: { type: Date, required: true },
     attempts: { type: Number, default: 0 },
+    profilePhotoUrl: { type: String },
+    address: {
+      street: { type: String },
+      city: { type: String },
+      state: { type: String },
+      postalCode: { type: String },
+      country: { type: String },
+    },
   },
   { timestamps: true },
 );

@@ -5,10 +5,14 @@ const authMiddleware = require("../middlewares/authMiddleware");
 const upload = require("../middlewares/uploadMiddleware");
 
 router.get("/", authMiddleware, profileController.getProfile);
+router.put("/", authMiddleware, profileController.updateProfile);
 router.post(
   "/photo",
   authMiddleware,
-  upload.single("image"),
+  upload.fields([
+    { name: "profilePhoto", maxCount: 1 },
+    { name: "funeralHomePhoto", maxCount: 1 },
+  ]),
   profileController.uploadProfilePhoto,
 );
 

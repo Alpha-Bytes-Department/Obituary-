@@ -10,6 +10,7 @@ const {
   createOtpCode,
 } = require("../utils/jwtUtils");
 const { sendMail } = require("../config/mailer");
+const { uploadBuffer } = require("../config/cloudinary");
 
 const OTP_EXPIRY_MINUTES = 10;
 const RESET_TOKEN_EXPIRY_MINUTES = 15;
@@ -61,11 +62,19 @@ exports.register = async (req, res) => {
     const { firstName, lastName, email, password, profilePhotoUrl, address } =
       req.body;
     const normalizedEmail = normalizeEmail(email);
+    let uploadedProfilePhotoUrl = profilePhotoUrl || undefined;
 
     if (!firstName || !lastName || !normalizedEmail || !password || !address) {
       return res
         .status(400)
         .json({ message: "All registration fields are required" });
+    }
+
+    if (req.file) {
+      const profileUpload = await uploadBuffer(req.file.buffer, {
+        folder: "obituary/profile-photos",
+      });
+      uploadedProfilePhotoUrl = profileUpload.secure_url;
     }
 
     const existingUser = await User.findOne({ email: normalizedEmail });
@@ -76,6 +85,8 @@ exports.register = async (req, res) => {
     const otpCode = createOtpCode();
     const passwordHash = await bcrypt.hash(String(password), 12);
     const otpHash = await bcrypt.hash(otpCode, 10);
+    const normalizedAddress =
+      typeof address === "string" ? address : address || undefined;
 
     await PendingRegistration.findOneAndUpdate(
       { email: normalizedEmail },
@@ -85,6 +96,8 @@ exports.register = async (req, res) => {
         email: normalizedEmail,
         passwordHash,
         otpHash,
+        profilePhotoUrl: uploadedProfilePhotoUrl,
+        address: normalizedAddress,
         otpExpiresAt: new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000),
         attempts: 0,
       },
@@ -155,6 +168,8 @@ exports.verifyRegistrationOtp = async (req, res) => {
       lastName: pendingRegistration.lastName,
       email: pendingRegistration.email,
       passwordHash: pendingRegistration.passwordHash,
+      profilePhotoUrl: pendingRegistration.profilePhotoUrl,
+      address: pendingRegistration.address,
       role: "user",
     });
 

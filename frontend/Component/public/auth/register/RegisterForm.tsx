@@ -191,47 +191,7 @@ export default function RegisterForm() {
       </div>
 
       <div className="mt-5 space-y-2">
-        <label
-          className="block text-[0.92rem] font-semibold text-[#2f2c29]"
-          htmlFor="logo"
-        >
-          Funeral Home Logo
-        </label>
-        <label htmlFor="logo" className={filePreviewClassName}>
-          {logoPreview ? (
-            <Image
-              src={logoPreview}
-              alt="Funeral home logo preview"
-              width={500}
-              height={288}
-              unoptimized
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <div className="space-y-2 text-[#b2ada7]">
-              <Upload className="mx-auto h-5 w-5" />
-              <p className="text-[0.88rem] font-medium">Funeral Home Logo</p>
-            </div>
-          )}
-        </label>
-        <input
-          id="logo"
-          type="file"
-          accept="image/*"
-          className="sr-only"
-          {...register("logo", {
-            onChange: (event) => {
-              const file = event.target.files?.[0];
-              setLogoPreview((current) => {
-                if (current) {
-                  URL.revokeObjectURL(current);
-                }
-
-                return file ? URL.createObjectURL(file) : undefined;
-              });
-            },
-          })}
-        />
+       
       </div>
 
       <div className="grid gap-5 pt-5 sm:grid-cols-2 sm:gap-x-4 sm:gap-y-6">

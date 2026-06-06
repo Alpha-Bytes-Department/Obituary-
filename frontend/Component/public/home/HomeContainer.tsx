@@ -18,7 +18,7 @@ export default function HomeContainer() {
       <section className="overflow-hidden rounded-[2rem] border border-black/5 bg-[#111827] shadow-[0_30px_90px_rgba(15,23,42,0.22)]">
         <div className="relative min-h-128 sm:min-h-152">
           <Image
-            src="/source/Banner.jpg"
+            src="https://res.cloudinary.com/dhyq4r3nm/image/upload/q_auto/f_auto/v1780702676/Banner_z2tnjf.jpg"
             alt="Memorial hero background"
             fill
             priority
@@ -38,7 +38,7 @@ export default function HomeContainer() {
 
               <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
                 <Link
-                  href="/profile/create"
+                  href="/memorial"
                   className="rounded-md bg-[#1e3a5f] px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-[#16314f]"
                 >
                   Create a Memorial

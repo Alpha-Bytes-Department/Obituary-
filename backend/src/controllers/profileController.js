@@ -1,5 +1,6 @@
 const User = require("../models/User");
 const FuneralHome = require("../models/FuneralHome");
+const crypto = require("crypto");
 const { uploadBuffer } = require("../config/cloudinary");
 
 /**
@@ -210,5 +211,87 @@ exports.uploadProfilePhoto = async (req, res) => {
   } catch (error) {
     console.error("Upload profile photo error:", error);
     return res.status(500).json({ message: "Failed to upload profile photo" });
+  }
+};
+
+// ================= Apply Token =================
+exports.applyToken = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user.tokenApplied) {
+      return res.status(400).json({ message: "Token already applied" });
+    }
+
+    user.tokenApplied = true;
+    await user.save();
+
+    return res.status(200).json({
+      message: "Token applied successfully",
+      user: {
+        id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role,
+        profilePhotoUrl: user.profilePhotoUrl,
+        tokenApplied: user.tokenApplied,
+        tokenApproveStatus: user.tokenApproveStatus,
+        token: user.token,
+      },
+    });
+  } catch (error) {
+    console.error("Apply token error:", error);
+    return res.status(500).json({ message: "Failed to apply token" });
+  }
+};
+
+// ================= Approve Token =================
+exports.approveToken = async (req, res) => {
+  try {
+    const adminId = req.user.id;
+    const admin = await User.findById(adminId);
+
+    if (!admin || admin.role !== "admin") {
+      return res.status(403).json({ message: "Unauthorized access" });
+    }
+
+    const { userId } = req.params;
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (!user.tokenApplied) {
+      return res.status(400).json({ message: "User has not applied for a token" });
+    }
+
+    user.tokenApproveStatus = true;
+    user.token = `TOKEN-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
+    await user.save();
+
+    return res.status(200).json({
+      message: "Token approved successfully",
+      user: {
+        id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role,
+        profilePhotoUrl: user.profilePhotoUrl,
+        tokenApplied: user.tokenApplied,
+        tokenApproveStatus: user.tokenApproveStatus,
+        token: user.token,
+      },
+    });
+  } catch (error) {
+    console.error("Approve token error:", error);
+    return res.status(500).json({ message: "Failed to approve token" });
   }
 };

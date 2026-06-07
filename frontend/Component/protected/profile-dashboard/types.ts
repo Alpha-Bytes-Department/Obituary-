@@ -34,4 +34,8 @@ export interface DashboardUser {
   lastName: string;
   email: string;
   userImage: string;
+  funeralHome?: {
+    logoImageUrl?: string;
+    [key: string]: any;
+  };
 }

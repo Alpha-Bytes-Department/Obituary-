@@ -1,9 +1,12 @@
 "use client";
-
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAppContext } from "../../../../context/AppContext";
+import { useAxios } from "../../../../context/AxiosProvider";
+import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -15,12 +18,10 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
-/**
- * Renders the login form with client-side validation.
- *
- * @returns {JSX.Element} The login form.
- */
 export default function LoginForm() {
+  const router = useRouter();
+  const api = useAxios();
+  const { setSession } = useAppContext();
   const {
     register,
     handleSubmit,
@@ -33,7 +34,36 @@ export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
 
   const onSubmit = handleSubmit(async (data) => {
-    console.log(data);
+    try {
+      const response = await api.post("/auth/login", {
+        email: data.email,
+        password: data.password,
+      });
+
+      const { user, accessToken, refreshToken } = response.data;
+
+      setSession(
+        {
+          id: user.id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          userImage: user.profilePhotoUrl || "/Source/person.jpg",
+          role: user.role,
+          tokenApplied: user.tokenApplied,
+          tokenApproveStatus: user.tokenApproveStatus,
+          token: user.token,
+          funeralHome: user.funeralHome,
+        },
+        accessToken,
+        refreshToken,
+      );
+
+      toast.success("Logged in successfully!");
+      router.replace("/");
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Login failed");
+    }
   });
 
   return (

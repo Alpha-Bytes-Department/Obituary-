@@ -4,15 +4,10 @@ import React from "react";
 import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
 
-export type SubmissionFlow = {
-  familyTree: any[];
-  mediaUpload: { celebrationPhotos: string[] };
-};
-
 export default function SuccessScreen({
   payload,
 }: {
-  payload: SubmissionFlow;
+  payload: any;
 }) {
   return (
     <div className="mx-auto flex min-h-[65vh] max-w-3xl items-center justify-center px-4 py-12">

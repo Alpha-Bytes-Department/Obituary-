@@ -8,6 +8,8 @@ import {
   getPendingSignup,
 } from "../../../../lib/registerFlow";
 import useAuth from "../../../../hooks/useAuth";
+import { useAxios } from "../../../../context/AxiosProvider";
+import { toast } from "sonner";
 
 const OTP_LENGTH = 6;
 
@@ -19,10 +21,12 @@ const OTP_LENGTH = 6;
 export default function OtpVerificationPage() {
   const router = useRouter();
   const { setSession } = useAuth();
+  const api = useAxios();
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
   const [otp, setOtp] = useState(Array.from({ length: OTP_LENGTH }, () => ""));
   const [resendCount, setResendCount] = useState(0);
   const pendingSignup = useMemo(() => getPendingSignup(), []);
+  const [isVerifying, setIsVerifying] = useState(false);
 
   useEffect(() => {
     inputRefs.current[0]?.focus();
@@ -78,31 +82,52 @@ export default function OtpVerificationPage() {
     focusInput(Math.min(pastedDigits.length, OTP_LENGTH - 1));
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (!isComplete) {
       return;
     }
 
-    const currentUser = pendingSignup ?? {
-      firstName: "John",
-      lastName: "Doe",
-      email: "john.doe@example.com",
-      password: "",
-    };
+    if (!pendingSignup?.email) {
+      toast.error("No pending registration found. Please register again.");
+      return;
+    }
 
-    setSession(
-      {
-        id: `user-${Date.now()}`,
-        firstName: currentUser.firstName,
-        lastName: currentUser.lastName,
-        email: currentUser.email,
-        userImage: "/Source/person.jpg",
-        role: "user",
-      },
-      `token-${Date.now()}`,
-    );
-    clearPendingSignup();
-    router.replace("/");
+    try {
+      setIsVerifying(true);
+      const response = await api.post("/auth/verify-registration", {
+        email: pendingSignup.email,
+        otp: code,
+      });
+
+      const { user, accessToken, refreshToken } = response.data;
+
+      setSession(
+        {
+          id: user.id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          userImage: user.profilePhotoUrl || "/Source/person.jpg",
+          role: user.role,
+          tokenApplied: user.tokenApplied,
+          tokenApproveStatus: user.tokenApproveStatus,
+          token: user.token,
+          funeralHome: user.funeralHome,
+        },
+        accessToken,
+        refreshToken,
+      );
+
+      clearPendingSignup();
+      toast.success("Registration successful!");
+      router.replace("/");
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Verification failed");
+      setOtp(Array.from({ length: OTP_LENGTH }, () => ""));
+      focusInput(0);
+    } finally {
+      setIsVerifying(false);
+    }
   };
 
   return (
@@ -153,10 +178,10 @@ export default function OtpVerificationPage() {
         <button
           type="button"
           onClick={handleContinue}
-          disabled={!isComplete}
+          disabled={!isComplete || isVerifying}
           className="mt-8 h-12 w-full rounded-[10px] bg-[#233f68] text-[1rem] font-semibold text-white transition hover:bg-[#17365f] disabled:cursor-not-allowed disabled:opacity-60"
         >
-          Continue
+          {isVerifying ? "Verifying..." : "Continue"}
         </button>
 
         <p className="mt-4 text-center text-xs text-[#8b8f96]">

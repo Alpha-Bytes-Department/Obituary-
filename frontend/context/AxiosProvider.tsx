@@ -10,15 +10,8 @@ import { useAppContext } from "./AppContext";
 
 const AxiosContext = createContext<AxiosInstance | undefined>(undefined);
 
-/**
- * Provides a configured Axios instance with auth headers and 401 handling.
- *
- * @param {object} props - Component props.
- * @param {ReactNode} props.children - Nested application content.
- * @returns {JSX.Element} The Axios provider.
- */
 export function AxiosProvider({ children }: { children: ReactNode }) {
-  const { accessToken, logout } = useAppContext();
+  const { accessToken, refreshToken, logout, setSession } = useAppContext();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -36,10 +29,16 @@ export function AxiosProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const requestInterceptor = api.interceptors.request.use((config) => {
-      if (accessToken) {
-        config.headers = config.headers ?? {};
-        (config.headers as Record<string, string>).Authorization =
-          `Bearer ${accessToken}`;
+      if (!config._retry) {
+        const token = typeof window !== "undefined" 
+          ? localStorage.getItem("obituary.accessToken") 
+          : accessToken;
+          
+        if (token) {
+          config.headers = config.headers ?? {};
+          (config.headers as Record<string, string>).Authorization =
+            `Bearer ${token}`;
+        }
       }
 
       return config;
@@ -47,16 +46,44 @@ export function AxiosProvider({ children }: { children: ReactNode }) {
 
     const responseInterceptor = api.interceptors.response.use(
       (response) => response,
-      (error) => {
-        if (error?.response?.status === 401) {
-          logout();
+      async (error) => {
+        const originalRequest = error.config;
+        
+        if (error?.response?.status === 401 && !originalRequest._retry) {
+          originalRequest._retry = true;
+          try {
+            const refreshResponse = await api.post("/auth/refresh", {
+              refreshToken,
+            });
+            const { accessToken: newAccessToken, refreshToken: newRefreshToken, user } = refreshResponse.data;
+            
+            setSession(
+              {
+                id: user.id,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                email: user.email,
+                userImage: user.profilePhotoUrl || "/Source/person.jpg",
+                role: user.role,
+              },
+              newAccessToken,
+              newRefreshToken,
+            );
+            
+            originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+            return api(originalRequest);
+          } catch (refreshError) {
+            logout();
 
-          if (
-            pathname !== "/login" &&
-            pathname !== "/register" &&
-            pathname !== "/forgot-password"
-          ) {
-            router.replace("/login");
+            if (
+              pathname !== "/login" &&
+              pathname !== "/register" &&
+              pathname !== "/forgot-password"
+            ) {
+              router.replace("/login");
+            }
+            
+            return Promise.reject(refreshError);
           }
         }
 
@@ -73,12 +100,6 @@ export function AxiosProvider({ children }: { children: ReactNode }) {
   return <AxiosContext.Provider value={api}>{children}</AxiosContext.Provider>;
 }
 
-/**
- * Returns the shared Axios instance configured by the provider.
- *
- * @returns {AxiosInstance} The application Axios client.
- * @throws {Error} Throws when used outside of AxiosProvider.
- */
 export function useAxios() {
   const api = useContext(AxiosContext);
 

@@ -17,6 +17,9 @@ const UserSchema = new mongoose.Schema(
       postalCode: { type: String },
       country: { type: String },
     },
+    tokenApplied: { type: Boolean, default: false },
+    tokenApproveStatus: { type: Boolean, default: false },
+    token: { type: String , unique:true, default:null },
   },
   { timestamps: true },
 );

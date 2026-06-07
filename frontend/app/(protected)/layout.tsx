@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 
 import SiteShell from "../../Component/layout/SiteShell";
 
+import ProtectedRouteClient from "../../Component/protected/ProtectedRouteClient";
+
 /**
  * Wraps protected routes in the shared site shell.
  *
@@ -10,5 +12,9 @@ import SiteShell from "../../Component/layout/SiteShell";
  * @returns {JSX.Element} The protected route layout.
  */
 export default function ProtectedLayout({ children }: { children: ReactNode }) {
-  return <SiteShell>{children}</SiteShell>;
+  return (
+    <SiteShell>
+      <ProtectedRouteClient>{children}</ProtectedRouteClient>
+    </SiteShell>
+  );
 }

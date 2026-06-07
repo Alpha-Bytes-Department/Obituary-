@@ -2,16 +2,17 @@
 
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { type FormEvent, useEffect, useState } from "react";
+import Link from "next/link";
 import Stepper from "./components/Stepper";
 import SectionCard from "./components/SectionCard";
 import Label from "./components/Label";
 import TextInput from "./components/TextInput";
 import TextArea from "./components/TextArea";
 import FileDropZone from "./components/FileDropZone";
-import FamilyTreeCanvas, {
-  type FamilyMember,
-} from "./components/FamilyTreeCanvas";
 import SuccessScreen from "./components/SuccessScreen";
+import { useAppContext } from "../../../context/AppContext";
+import { useAxios } from "../../../context/AxiosProvider";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -73,7 +74,7 @@ type SubmissionFlow = {
     funeralHomeDetails: FuneralHomeDetails;
     advertisements: AdvertisementDraft[];
   };
-  familyTree: FamilyMember[];
+  familyTreeDiagram: string[];
   payment: {
     packageName: string;
     promoCode: string;
@@ -109,8 +110,6 @@ const createFuneralNotice = (): FuneralNotice => ({
   reception: { name: "", location: "", mapLink: "" },
 });
 
-const initialFamilyTree: FamilyMember[] = [];
-
 const initialFlow: SubmissionFlow = {
   personalDetails: {
     fullName: "",
@@ -134,7 +133,7 @@ const initialFlow: SubmissionFlow = {
     funeralHomeDetails: createFuneralHomeDetails(),
     advertisements: [createAdvertisement("ad-1")],
   },
-  familyTree: initialFamilyTree,
+  familyTreeDiagram: [],
   payment: {
     packageName: "Memorial Package",
     promoCode: "",
@@ -289,7 +288,7 @@ const normalizeFlow = (value: unknown): SubmissionFlow => {
       },
       advertisements: legacyAdvertisement,
     },
-    familyTree: initialFamilyTree,
+    familyTreeDiagram: normalizeStringArray(raw.familyTreeDiagram),
     funeralNotice: {
       service: {
         name:
@@ -365,20 +364,40 @@ const readDraftState = (): DraftState => {
 };
 
 export default function MemorialFlow() {
+  const { user, isAuthenticated } = useAppContext();
+  const api = useAxios();
   const initialDraft = readDraftState();
   const [currentStep, setCurrentStep] = useState<StepId>(
     initialDraft.currentStep,
   );
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [flow, setFlow] = useState<SubmissionFlow>(initialDraft.flow);
-  const [isFamilyTreeModalOpen, setIsFamilyTreeModalOpen] = useState(false);
 
-  const updateFamilyTree = (nextFamilyTree: FamilyMember[]) => {
-    setFlow((current) => ({
-      ...current,
-      familyTree: nextFamilyTree,
-    }));
-  };
+  useEffect(() => {
+    if (user?.funeralHome) {
+      setFlow((prev) => {
+        // Only prefill if the draft is largely empty for funeral home
+        if (!prev.others.funeralHomeDetails.name) {
+          return {
+            ...prev,
+            others: {
+              ...prev.others,
+              funeralHomeDetails: {
+                name: user.funeralHome.name || "",
+                websiteLink: user.funeralHome.website || "",
+                mail: user.funeralHome.email || "",
+                phone: user.funeralHome.phone || "",
+                location: user.funeralHome.address || "",
+                mapLink: user.funeralHome.MapLink || "",
+              },
+            },
+          };
+        }
+        return prev;
+      });
+    }
+  }, [user]);
 
   const updateAdvertisement = (
     advertisementId: string,
@@ -398,18 +417,24 @@ export default function MemorialFlow() {
   };
 
   const addAdvertisement = () => {
-    setFlow((current) => ({
-      ...current,
-      others: {
-        ...current.others,
-        advertisements: [
-          ...current.others.advertisements,
-          createAdvertisement(
-            `ad-${Date.now()}-${current.others.advertisements.length}`,
-          ),
-        ],
-      },
-    }));
+    setFlow((current) => {
+      if (current.others.advertisements.length >= 3) {
+        toast.error("Maximum of 3 advertisements allowed.");
+        return current;
+      }
+      return {
+        ...current,
+        others: {
+          ...current.others,
+          advertisements: [
+            ...current.others.advertisements,
+            createAdvertisement(
+              `ad-${Date.now()}-${current.others.advertisements.length}`,
+            ),
+          ],
+        },
+      };
+    });
   };
 
   const removeAdvertisement = (advertisementId: string) => {
@@ -464,7 +489,7 @@ export default function MemorialFlow() {
     }
   }, [currentStep, flow]);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (currentStep < 5) {
@@ -472,8 +497,56 @@ export default function MemorialFlow() {
       return;
     }
 
-    console.log("Submitted memorial data:", { currentStep, flow });
-    setIsSuccess(true);
+    setIsSubmitting(true);
+    try {
+      const formData = new FormData();
+      formData.append("name", flow.personalDetails.fullName);
+      formData.append("deathDate", flow.personalDetails.dateOfDeath);
+      formData.append("location", flow.personalDetails.location);
+      formData.append("memorialDetails", flow.personalDetails.obituary);
+      formData.append("familyDetails", flow.personalDetails.familyDetails);
+      formData.append("lifeStory", flow.obituaryContent.lifeStory);
+      formData.append("rememberForEverQuote", flow.obituaryContent.livesRememberedForever);
+      formData.append("favouriteQuote", flow.obituaryContent.favoriteQuote);
+      formData.append("careerSummery", flow.obituaryContent.careerSummary);
+      formData.append("relationToDeceased", flow.others.relationshipToDeceased);
+      
+      formData.append("funeralHomeDetails", JSON.stringify(flow.others.funeralHomeDetails));
+      formData.append("funeralNotice", JSON.stringify(flow.funeralNotice));
+      
+      // Ads
+      const adsData = flow.others.advertisements.map(ad => ({ link: ad.postLink }));
+      formData.append("funeralHomeAdvertisement", JSON.stringify(adsData));
+      
+      flow.others.advertisements.forEach((ad, i) => {
+        if (ad.image[0]) {
+          formData.append(`adImage_${i}`, ad.image[0]);
+        }
+      });
+
+      // Photos
+      flow.mediaUpload.celebrationPhotos.forEach((file) => {
+        formData.append("deadPersonPhoto", file);
+      });
+
+      // Family Tree Diagram
+      if (flow.familyTreeDiagram[0] && typeof flow.familyTreeDiagram[0] !== 'string') {
+         // If it's a file object, assuming FileDropZone returns File[]
+         formData.append("familyTreeDiagram", flow.familyTreeDiagram[0] as any);
+      }
+
+      await api.post("/memorials", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      toast.success("Memorial submitted successfully!");
+      setIsSuccess(true);
+      window.localStorage.removeItem(DRAFT_STORAGE_KEY);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to submit memorial");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handlePrevious = () => {
@@ -483,11 +556,69 @@ export default function MemorialFlow() {
   const canSubmit = flow.payment.termsAccepted;
   const promoCode = flow.payment.promoCode.trim().toUpperCase();
   const basePrice = 99;
-  const discountAmount = promoCode === "XYZ123" ? basePrice : 0;
+  
+  const hasApprovedToken = Boolean(user?.tokenApproveStatus);
+  const discountAmount = hasApprovedToken ? basePrice : (promoCode === "XYZ123" ? basePrice : 0);
   const totalDue = Math.max(basePrice - discountAmount, 0);
 
   if (isSuccess) {
     return <SuccessScreen payload={flow} />;
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <main className="flex min-h-[calc(100vh-80px)] items-center justify-center bg-[#f9f6f1] px-4 py-12 sm:px-6 lg:px-8">
+        <div className="w-full max-w-2xl overflow-hidden rounded-[2rem] border border-[#e4d9c7] bg-white shadow-2xl">
+          <div className="relative overflow-hidden bg-[#1e3a5f] px-8 py-16 text-center">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-transparent to-transparent opacity-10"></div>
+            <div className="relative z-10 flex flex-col items-center">
+              <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-white/10 backdrop-blur-md">
+                <svg
+                  className="h-10 w-10 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                  />
+                </svg>
+              </div>
+              <h2 className="font-heading text-4xl font-bold tracking-tight text-white sm:text-5xl">
+                Sign In Required
+              </h2>
+              <p className="mx-auto mt-4 max-w-md text-lg text-blue-100">
+                You must be logged in to create and submit a memorial. This
+                ensures your progress is saved securely.
+              </p>
+            </div>
+          </div>
+          <div className="bg-white px-8 py-10 text-center">
+            <p className="mb-8 text-base text-slate-600">
+              Join us to create a beautiful, lasting tribute for your loved one.
+              It only takes a minute to get started.
+            </p>
+            <div className="flex flex-col justify-center gap-4 sm:flex-row">
+              <Link
+                href="/login"
+                className="inline-flex items-center justify-center rounded-xl bg-[#274877] px-8 py-4 text-base font-medium text-white shadow-sm transition-all hover:bg-[#1e3a5f] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#274877] focus:ring-offset-2"
+              >
+                Log In
+              </Link>
+              <Link
+                href="/register"
+                className="inline-flex items-center justify-center rounded-xl border-2 border-[#274877] px-8 py-4 text-base font-medium text-[#274877] transition-all hover:bg-[#f8f9fa] focus:outline-none focus:ring-2 focus:ring-[#274877] focus:ring-offset-2"
+              >
+                Create Account
+              </Link>
+            </div>
+          </div>
+        </div>
+      </main>
+    );
   }
 
   return (
@@ -1023,24 +1154,27 @@ export default function MemorialFlow() {
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <div>
                       <h3 className="text-lg font-semibold tracking-tight text-slate-950">
-                        Family Tree Builder
+                        Family Tree Diagram
                       </h3>
                       <p className="text-sm text-slate-500">
-                        Open the modal to manage the family tree.
+                        Upload an image of your family tree.
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setIsFamilyTreeModalOpen(true)}
-                      className="rounded-lg bg-[#274877] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1f3a60]"
-                    >
-                      Open Family Tree Modal
-                    </button>
                   </div>
                   <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <p className="text-sm text-slate-500">
-                      {flow.familyTree.length} family members saved.
-                    </p>
+                    <FileDropZone
+                      title="Family Tree Image"
+                      subtitle="PNG, JPG up to 10MB"
+                      files={flow.familyTreeDiagram as any}
+                      maxFiles={1}
+                      multiple={false}
+                      onFiles={(files) =>
+                        setFlow((current) => ({
+                          ...current,
+                          familyTreeDiagram: files as any,
+                        }))
+                      }
+                    />
                   </div>
                 </div>
               </div>
@@ -1060,8 +1194,9 @@ export default function MemorialFlow() {
                         Secure memorial checkout
                       </h3>
                       <p className="mt-2 text-sm leading-6 text-slate-600">
-                        Apply a promo code before submitting. XYZ123 makes the
-                        demo checkout completely free.
+                        {hasApprovedToken 
+                          ? "You have an approved token. Your memorial submission is completely free."
+                          : "Apply a promo code before submitting. XYZ123 makes the demo checkout completely free."}
                       </p>
                     </div>
                     <span className="rounded-full bg-[#eef4ff] px-3 py-1 text-xs font-semibold text-[#274877]">
@@ -1096,39 +1231,41 @@ export default function MemorialFlow() {
                     </div>
                   </div>
 
-                  <div>
-                    <Label>Promo Code</Label>
-                    <TextInput
-                      value={flow.payment.promoCode}
-                      onChange={(value) =>
-                        setFlow((current) => ({
-                          ...current,
-                          payment: {
-                            ...current.payment,
-                            promoCode: value,
-                          },
-                        }))
-                      }
-                      placeholder="Enter promo code"
-                    />
-                    <p
-                      className={`mt-2 text-xs ${
-                        promoCode === "XYZ123"
-                          ? "text-emerald-700"
+                  {!hasApprovedToken && (
+                    <div>
+                      <Label>Promo Code</Label>
+                      <TextInput
+                        value={flow.payment.promoCode}
+                        onChange={(value) =>
+                          setFlow((current) => ({
+                            ...current,
+                            payment: {
+                              ...current.payment,
+                              promoCode: value,
+                            },
+                          }))
+                        }
+                        placeholder="Enter promo code"
+                      />
+                      <p
+                        className={`mt-2 text-xs ${
+                          promoCode === "XYZ123"
+                            ? "text-emerald-700"
+                            : promoCode
+                              ? "text-amber-700"
+                              : "text-slate-400"
+                        }`}
+                      >
+                        {promoCode === "XYZ123"
+                          ? "XYZ123 applied. Your demo total is free."
                           : promoCode
-                            ? "text-amber-700"
-                            : "text-slate-400"
-                      }`}
-                    >
-                      {promoCode === "XYZ123"
-                        ? "XYZ123 applied. Your demo total is free."
-                        : promoCode
-                          ? "Promo code does not match the free test code."
-                          : "Use XYZ123 for a 100% free demo checkout."}
-                    </p>
-                  </div>
+                            ? "Promo code does not match the free test code."
+                            : "Use XYZ123 for a 100% free demo checkout."}
+                      </p>
+                    </div>
+                  )}
 
-                  <label className="flex items-start gap-3 text-sm text-slate-600">
+                  <label className="mt-4 flex items-start gap-3 text-sm text-slate-600">
                     <input
                       type="checkbox"
                       checked={flow.payment.termsAccepted}
@@ -1181,9 +1318,11 @@ export default function MemorialFlow() {
                       ${totalDue.toFixed(2)}
                     </p>
                     <p className="mt-2 text-sm text-white/70">
-                      {promoCode === "XYZ123"
-                        ? "100% discount applied for testing."
-                        : "Apply a promo code before submitting."}
+                      {hasApprovedToken
+                        ? "Free submission via approved token."
+                        : promoCode === "XYZ123"
+                          ? "100% discount applied for testing."
+                          : "Apply a promo code before submitting."}
                     </p>
                   </div>
 
@@ -1232,41 +1371,6 @@ export default function MemorialFlow() {
           ) : null}
         </form>
       </div>
-
-      <Dialog
-        open={isFamilyTreeModalOpen}
-        onOpenChange={(open) => setIsFamilyTreeModalOpen(open)}
-      >
-        <DialogContent className="w-[calc(100%-1rem)] max-w-5xl p-0 sm:max-w-5xl">
-          <div className="max-h-[90vh] overflow-y-auto p-5 sm:p-6">
-            <DialogHeader>
-              <DialogTitle>Family Tree Builder</DialogTitle>
-              <DialogDescription>
-                Manage the family tree here. Funeral home details are entered in
-                the separate section on the form.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="mt-5 space-y-6">
-              <FamilyTreeCanvas
-                familyTree={flow.familyTree}
-                onChange={updateFamilyTree}
-              />
-            </div>
-
-            <DialogFooter className="mt-6 border-t border-slate-200 bg-transparent px-0 pb-0 pt-5">
-              <div className="flex w-full justify-end">
-                <Button
-                  type="button"
-                  onClick={() => setIsFamilyTreeModalOpen(false)}
-                >
-                  Done
-                </Button>
-              </div>
-            </DialogFooter>
-          </div>
-        </DialogContent>
-      </Dialog>
     </main>
   );
 }

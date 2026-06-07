@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const User = require("../models/User");
+const FuneralHome = require("../models/FuneralHome");
 const PendingRegistration = require("../models/PendingRegistration");
 const PasswordResetToken = require("../models/PasswordResetToken");
 const {
@@ -42,6 +43,13 @@ async function respondWithAuthTokens(res, user) {
   user.refreshToken = tokens.refreshToken;
   await user.save();
 
+  let funeralHome = null;
+  try {
+    funeralHome = await FuneralHome.findOne({ userId: user._id });
+  } catch (error) {
+    console.error("Failed to fetch funeral home in auth:", error);
+  }
+
   return res.status(200).json({
     message: "Authentication successful",
     accessToken: tokens.accessToken,
@@ -52,6 +60,11 @@ async function respondWithAuthTokens(res, user) {
       lastName: user.lastName,
       email: user.email,
       role: user.role,
+      profilePhotoUrl: user.profilePhotoUrl,
+      tokenApplied: user.tokenApplied,
+      tokenApproveStatus: user.tokenApproveStatus,
+      token: user.token,
+      funeralHome: funeralHome || null,
     },
   });
 }
@@ -85,8 +98,17 @@ exports.register = async (req, res) => {
     const otpCode = createOtpCode();
     const passwordHash = await bcrypt.hash(String(password), 12);
     const otpHash = await bcrypt.hash(otpCode, 10);
-    const normalizedAddress =
-      typeof address === "string" ? address : address || undefined;
+    
+    let parsedAddress;
+    if (typeof address === "string") {
+      try {
+        parsedAddress = JSON.parse(address);
+      } catch (e) {
+        parsedAddress = {};
+      }
+    } else {
+      parsedAddress = address || undefined;
+    }
 
     await PendingRegistration.findOneAndUpdate(
       { email: normalizedEmail },
@@ -97,7 +119,7 @@ exports.register = async (req, res) => {
         passwordHash,
         otpHash,
         profilePhotoUrl: uploadedProfilePhotoUrl,
-        address: normalizedAddress,
+        address: parsedAddress,
         otpExpiresAt: new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000),
         attempts: 0,
       },
@@ -368,6 +390,14 @@ exports.refreshToken = async (req, res) => {
       message: "Token refreshed successfully",
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
+      user: {
+        id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role,
+        profilePhotoUrl: user.profilePhotoUrl,
+      },
     });
   } catch (error) {
     console.error("Refresh token error:", error);

@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { Copy } from "lucide-react";
 import { toast } from "sonner";
-
+import { useAxios } from "../../../context/AxiosProvider";
+import { useAppContext } from "../../../context/AppContext";
 import { Button } from "../../../components/ui/button";
 
 /**
@@ -12,33 +13,29 @@ import { Button } from "../../../components/ui/button";
  * @returns {JSX.Element} The coupon status card.
  */
 export default function CouponStatusCard() {
+  const { user, setSession, accessToken, refreshToken } = useAppContext();
+  const api = useAxios();
   const [couponRippleKey, setCouponRippleKey] = useState(0);
-  const [couponSubmitted, setCouponSubmitted] = useState(false);
-  const [showCouponButton, setShowCouponButton] = useState(true);
-  const couponCode = "XYZ-2046";
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (!couponSubmitted) {
-      setShowCouponButton(true);
-      return undefined;
-    }
+  const tokenApplied = user?.tokenApplied;
+  const tokenApproved = user?.tokenApproveStatus;
+  const couponCode = user?.token || "";
 
-    const timer = window.setTimeout(() => {
-      setShowCouponButton(false);
-    }, 320);
-
-    return () => window.clearTimeout(timer);
-  }, [couponSubmitted]);
-
-  /**
-   * Submits the coupon request and reveals the eligibility card.
-   *
-   * @returns {void}
-   */
-  const handleCouponRequest = () => {
+  const handleCouponRequest = async () => {
     setCouponRippleKey((value) => value + 1);
-    setCouponSubmitted(true);
-    toast.success("Your application for free coupon is submitted.");
+    setIsSubmitting(true);
+    try {
+      const res = await api.post("/profile/apply-token");
+      if (user && accessToken && refreshToken) {
+        setSession({ ...user, tokenApplied: true }, accessToken, refreshToken);
+      }
+      toast.success("Your application for free coupon is submitted.");
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to apply for coupon");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   /**
@@ -67,51 +64,63 @@ export default function CouponStatusCard() {
           </p>
         </div>
 
-        {showCouponButton ? (
+        {!tokenApplied ? (
           <Button
             type="button"
             onClick={handleCouponRequest}
-            className={`relative h-11 overflow-hidden rounded-md bg-[#233f68] px-5 text-[0.95rem] font-medium text-white shadow-[0_8px_18px_rgba(35,63,104,0.2)] transition-all duration-500 ease-out hover:-translate-y-0.5 hover:bg-[#1b3254] active:scale-[0.98] ${
-              couponSubmitted
-                ? "pointer-events-none translate-y-2 scale-95 opacity-0"
-                : "opacity-100"
-            }`}
+            disabled={isSubmitting}
+            className={`relative h-11 overflow-hidden rounded-md bg-[#233f68] px-5 text-[0.95rem] font-medium text-white shadow-[0_8px_18px_rgba(35,63,104,0.2)] transition-all duration-500 ease-out hover:-translate-y-0.5 hover:bg-[#1b3254] active:scale-[0.98] disabled:opacity-50`}
           >
             <span
               key={couponRippleKey}
               aria-hidden="true"
               className="absolute inset-0 rounded-[inherit] bg-white/20 animate-waterdrop"
             />
-            <span className="relative">Apply for free Coupon</span>
+            <span className="relative">{isSubmitting ? "Applying..." : "Apply for free Coupon"}</span>
           </Button>
         ) : null}
       </div>
 
-      {couponSubmitted ? (
+      {tokenApplied && !tokenApproved ? (
         <div className="rounded-md border border-[#e8d68f] bg-[#fff9dd] p-4 shadow-[0_8px_24px_rgba(15,23,42,0.05)]">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
               <p className="text-[0.85rem] font-semibold uppercase tracking-[0.18em] text-[#9a6a15]">
-                Coupon status updated
+                Coupon status: Pending
               </p>
               <h3 className="text-[1.15rem] font-semibold text-[#5f4608]">
-                You are eligible for a free coupon.
+                Your application is pending admin approval.
               </h3>
-              <p className="text-[0.95rem] text-[#6f5612]">
-                Your coupon is{" "}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {tokenApproved ? (
+        <div className="rounded-md border border-[#9edb8f] bg-[#f0ffed] p-4 shadow-[0_8px_24px_rgba(15,23,42,0.05)]">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
+              <p className="text-[0.85rem] font-semibold uppercase tracking-[0.18em] text-[#1c6a15]">
+                Coupon status updated
+              </p>
+              <h3 className="text-[1.15rem] font-semibold text-[#185f08]">
+                You are eligible for a free submission.
+              </h3>
+              <p className="text-[0.95rem] text-[#1a6f12]">
+                Your token is{" "}
                 <span className="font-semibold">{couponCode}</span>.
               </p>
             </div>
 
             <div className="flex items-center gap-3">
-              <div className="rounded-md border border-[#d8c56d] bg-white px-4 py-2 text-sm font-semibold tracking-[0.18em] text-[#8f6410]">
+              <div className="rounded-md border border-[#8cd86d] bg-white px-4 py-2 text-sm font-semibold tracking-[0.18em] text-[#188f10]">
                 {couponCode}
               </div>
               <Button
                 type="button"
                 variant="outline"
                 onClick={copyCouponCode}
-                className="border-[#d8c56d] bg-white text-[#8a6215] hover:bg-[#fff6cf]"
+                className="border-[#8cd86d] bg-white text-[#188a15] hover:bg-[#e0ffcf]"
               >
                 <Copy className="h-4 w-4" />
                 Copy

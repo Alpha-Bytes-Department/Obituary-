@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Menu, X, ChevronRight } from "lucide-react";
 
 import useAuth from "../../hooks/useAuth";
@@ -15,9 +15,8 @@ interface NavItem {
 
 const userLinks: NavItem[] = [
   { label: "Home", href: "/" },
-  { label: "Obituaries", href: "/obituary" },
-  { label: "Profile", href: "/profile" },
-  { label: "Create Obituary", href: "/profile/create" },
+  { label: "Find a Memorial", href: "/obituary" },
+  { label: "Submit Memorial", href: "/memorial" },
 ];
 
 const adminLinks: NavItem[] = [
@@ -34,14 +33,27 @@ const publicLinks: NavItem[] = [
 ];
 
 export default function Navbar() {
-  const { user, role, isAuthenticated } = useAuth();
+  const { user, role, isAuthenticated, logout } = useAuth();
   const pathname = usePathname();
+  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [avatarFailed, setAvatarFailed] = useState(false);
 
   const navigation =
     role === "admin" ? adminLinks : isAuthenticated ? userLinks : publicLinks;
   const showPublicActions = !isAuthenticated;
+
+  // Close profile dropdown if clicked outside (simple effect or handled via mouseleave/blur, here simple blur or leave is fine, but for React it's easier to just use an overlay or manual toggle)
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (!(e.target as Element).closest("#profile-dropdown")) {
+        setProfileDropdownOpen(false);
+      }
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     if (!menuOpen) {
@@ -123,33 +135,59 @@ export default function Navbar() {
               </Link>
             </>
           ) : (
-            <Link
-              href="/profile"
-              className="flex items-center gap-3  bg-white px-2 py-1 pr-5  "
-            >
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#1e3a5f] text-white">
-                {avatarSrc ? (
-                  <Image
-                    src={avatarSrc}
-                    alt={`${user?.firstName} ${user?.lastName}`.trim()}
-                    width={48}
-                    height={48}
-                    className="h-full w-full object-cover"
-                    onError={() => setAvatarFailed(true)}
-                  />
-                ) : (
-                  <span className="text-sm font-semibold tracking-[0.08em]">
-                    {initials || "--"}
-                  </span>
-                )}
-              </div>
-              <div className="hidden min-w-0 sm:block">
-                <p className="truncate text-sm font-medium text-[#1e3a5f]">
-                  {user?.firstName} {user?.lastName}
-                </p>
-                <p className="truncate text-xs text-[#626262]">{user?.email}</p>
-              </div>
-            </Link>
+            <div className="relative" id="profile-dropdown">
+              <button
+                type="button"
+                onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                className="flex items-center gap-3 rounded-full bg-white px-2 py-1 pr-5 transition hover:bg-slate-50"
+              >
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#1e3a5f] text-white">
+                  {avatarSrc ? (
+                    <Image
+                      src={avatarSrc}
+                      alt={`${user?.firstName} ${user?.lastName}`.trim()}
+                      width={48}
+                      height={48}
+                      className="h-full w-full object-cover"
+                      onError={() => setAvatarFailed(true)}
+                    />
+                  ) : (
+                    <span className="text-sm font-semibold tracking-[0.08em]">
+                      {initials || "--"}
+                    </span>
+                  )}
+                </div>
+                <div className="hidden min-w-0 sm:block text-left">
+                  <p className="truncate text-sm font-medium text-[#1e3a5f]">
+                    {user?.firstName} {user?.lastName}
+                  </p>
+                  <p className="truncate text-xs text-[#626262]">{user?.email}</p>
+                </div>
+              </button>
+
+              {profileDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-48 rounded-xl border border-[#ece6dd] bg-white py-2 shadow-[0_4px_20px_rgba(0,0,0,0.08)]">
+                  <Link
+                    href="/profile"
+                    onClick={() => setProfileDropdownOpen(false)}
+                    className="block px-4 py-2.5 text-sm font-medium text-[#1e3a5f] transition hover:bg-slate-50"
+                  >
+                    Profile
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      logout();
+                      setProfileDropdownOpen(false);
+                      router.push("/");
+                    }}
+                    className="block w-full text-left px-4 py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-50"
+                  >
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -229,36 +267,54 @@ export default function Navbar() {
                   </Link>
                 </>
               ) : (
-                <Link
-                  href="/profile"
-                  onClick={() => setMenuOpen(false)}
-                  className="flex w-full items-center gap-3 rounded-2xl border border-[#eadfce] bg-white px-4 py-3 text-left transition hover:bg-[#faf7f2]"
-                >
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#1e3a5f] text-white">
-                    {avatarSrc ? (
-                      <Image
-                        src={avatarSrc}
-                        alt={`${user?.firstName} ${user?.lastName}`.trim()}
-                        width={44}
-                        height={44}
-                        className="h-full w-full object-cover"
-                        onError={() => setAvatarFailed(true)}
-                      />
-                    ) : (
-                      <span className="text-xs font-semibold tracking-[0.08em]">
-                        {initials || "--"}
+                <div className="space-y-2">
+                  <div className="flex w-full items-center gap-3 rounded-2xl border border-[#eadfce] bg-[#f8f3ec] px-4 py-3 text-left">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#1e3a5f] text-white">
+                      {avatarSrc ? (
+                        <Image
+                          src={avatarSrc}
+                          alt={`${user?.firstName} ${user?.lastName}`.trim()}
+                          width={44}
+                          height={44}
+                          className="h-full w-full object-cover"
+                          onError={() => setAvatarFailed(true)}
+                        />
+                      ) : (
+                        <span className="text-xs font-semibold tracking-[0.08em]">
+                          {initials || "--"}
+                        </span>
+                      )}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-medium text-[#1e3a5f]">
+                        {user?.firstName} {user?.lastName}
                       </span>
-                    )}
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block truncate text-sm font-medium text-[#1e3a5f]">
-                      {user?.firstName} {user?.lastName}
+                      <span className="block truncate text-xs text-[#626262]">
+                        {user?.email}
+                      </span>
                     </span>
-                    <span className="block truncate text-xs text-[#626262]">
-                      {user?.email}
-                    </span>
-                  </span>
-                </Link>
+                  </div>
+                  
+                  <Link
+                    href="/profile"
+                    onClick={() => setMenuOpen(false)}
+                    className="block w-full rounded-2xl border border-[#eadfce] bg-white px-4 py-3 text-center text-sm font-medium text-[#1e3a5f] transition hover:bg-[#faf7f2]"
+                  >
+                    Profile
+                  </Link>
+                  
+                  <button
+                    type="button"
+                    onClick={() => {
+                      logout();
+                      setMenuOpen(false);
+                      router.push("/");
+                    }}
+                    className="block w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-center text-sm font-medium text-red-600 transition hover:bg-red-100"
+                  >
+                    Logout
+                  </button>
+                </div>
               )}
             </div>
           </div>

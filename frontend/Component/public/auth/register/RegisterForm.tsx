@@ -10,6 +10,8 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { savePendingSignup } from "../../../../lib/registerFlow";
+import { useAxios } from "../../../../context/AxiosProvider";
+import { toast } from "sonner";
 
 const registerSchema = z
   .object({
@@ -20,6 +22,13 @@ const registerSchema = z
     confirmPassword: z.string().min(8, "Confirm your password."),
     profilePicture: z.any().optional(),
     logo: z.any().optional(),
+    address: z.object({
+      street: z.string().min(1, "Street is required."),
+      city: z.string().min(1, "City is required."),
+      state: z.string().min(1, "State is required."),
+      postalCode: z.string().min(1, "Postal code is required."),
+      country: z.string().min(1, "Country is required."),
+    }),
   })
   .refine((values) => values.password === values.confirmPassword, {
     message: "Passwords do not match.",
@@ -35,6 +44,7 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
  */
 export default function RegisterForm() {
   const router = useRouter();
+  const api = useAxios();
   const {
     register,
     handleSubmit,
@@ -49,6 +59,13 @@ export default function RegisterForm() {
       confirmPassword: "",
       profilePicture: undefined,
       logo: undefined,
+      address: {
+        street: "",
+        city: "",
+        state: "",
+        postalCode: "",
+        country: "",
+      },
     },
   });
 
@@ -71,14 +88,36 @@ export default function RegisterForm() {
   );
 
   const onSubmit = handleSubmit(async (data) => {
-    savePendingSignup({
-      firstName: data.firstName,
-      lastName: data.lastName,
-      email: data.email,
-      password: data.password,
-    });
+    try {
+      const formData = new FormData();
+      formData.append("firstName", data.firstName);
+      formData.append("lastName", data.lastName);
+      formData.append("email", data.email);
+      formData.append("password", data.password);
+      formData.append("address", JSON.stringify(data.address));
 
-    router.push("/register/verify");
+      if (data.profilePicture && data.profilePicture.length > 0) {
+        formData.append("profilePhoto", data.profilePicture[0]);
+      }
+
+      await api.post("/auth/register", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      savePendingSignup({
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        password: "",
+      });
+
+      toast.success("OTP sent to your email!");
+      router.push("/register/verify");
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Registration failed");
+    }
   });
 
   const filePreviewClassName =
@@ -144,6 +183,34 @@ export default function RegisterForm() {
         {errors.email ? (
           <p className="text-sm text-red-600">{errors.email.message}</p>
         ) : null}
+      </div>
+
+      <div className="grid gap-5 pt-1 sm:grid-cols-2 sm:gap-x-4 sm:gap-y-6">
+        <div className="space-y-2">
+          <label className="block text-[0.92rem] font-semibold text-[#2f2c29]" htmlFor="street">Street</label>
+          <input id="street" placeholder="123 Main St" className="h-12 w-full rounded-[10px] border border-[#e6e1da] bg-white px-4 text-[0.98rem] text-[#2f2c29] outline-none transition placeholder:text-[#b2ada7] focus:border-[#b4aba1]" {...register("address.street")} />
+          {errors.address?.street ? <p className="text-sm text-red-600">{errors.address.street.message}</p> : null}
+        </div>
+        <div className="space-y-2">
+          <label className="block text-[0.92rem] font-semibold text-[#2f2c29]" htmlFor="city">City</label>
+          <input id="city" placeholder="City" className="h-12 w-full rounded-[10px] border border-[#e6e1da] bg-white px-4 text-[0.98rem] text-[#2f2c29] outline-none transition placeholder:text-[#b2ada7] focus:border-[#b4aba1]" {...register("address.city")} />
+          {errors.address?.city ? <p className="text-sm text-red-600">{errors.address.city.message}</p> : null}
+        </div>
+        <div className="space-y-2">
+          <label className="block text-[0.92rem] font-semibold text-[#2f2c29]" htmlFor="state">State</label>
+          <input id="state" placeholder="State" className="h-12 w-full rounded-[10px] border border-[#e6e1da] bg-white px-4 text-[0.98rem] text-[#2f2c29] outline-none transition placeholder:text-[#b2ada7] focus:border-[#b4aba1]" {...register("address.state")} />
+          {errors.address?.state ? <p className="text-sm text-red-600">{errors.address.state.message}</p> : null}
+        </div>
+        <div className="space-y-2">
+          <label className="block text-[0.92rem] font-semibold text-[#2f2c29]" htmlFor="postalCode">Postal Code</label>
+          <input id="postalCode" placeholder="Postal Code" className="h-12 w-full rounded-[10px] border border-[#e6e1da] bg-white px-4 text-[0.98rem] text-[#2f2c29] outline-none transition placeholder:text-[#b2ada7] focus:border-[#b4aba1]" {...register("address.postalCode")} />
+          {errors.address?.postalCode ? <p className="text-sm text-red-600">{errors.address.postalCode.message}</p> : null}
+        </div>
+        <div className="space-y-2">
+          <label className="block text-[0.92rem] font-semibold text-[#2f2c29]" htmlFor="country">Country</label>
+          <input id="country" placeholder="Country" className="h-12 w-full rounded-[10px] border border-[#e6e1da] bg-white px-4 text-[0.98rem] text-[#2f2c29] outline-none transition placeholder:text-[#b2ada7] focus:border-[#b4aba1]" {...register("address.country")} />
+          {errors.address?.country ? <p className="text-sm text-red-600">{errors.address.country.message}</p> : null}
+        </div>
       </div>
 
       <div className="space-y-2 pt-1">

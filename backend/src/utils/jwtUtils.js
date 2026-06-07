@@ -8,16 +8,11 @@ const jwt = require("jsonwebtoken");
  */
 exports.createAccessToken = (payload) => {
   return jwt.sign(payload, process.env.JWT_SECRET || "dev_secret", {
-    expiresIn: "15m",
+    expiresIn: "65m",
   });
 };
 
-/**
- * Create refresh token
- *
- * @param {object} payload
- * @returns {string}
- */
+
 exports.createRefreshToken = (payload) => {
   return jwt.sign(
     payload,

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 
 export type AppRole = "guest" | "user" | "admin";
@@ -12,16 +12,22 @@ export interface AppUser {
   email: string;
   userImage: string;
   role: Exclude<AppRole, "guest">;
+  tokenApplied?: boolean;
+  tokenApproveStatus?: boolean;
+  token?: string | null;
+  funeralHome?: any;
 }
 
 interface AppContextValue {
   user: AppUser | null;
   accessToken: string | null;
+  refreshToken: string | null;
   role: AppRole;
   isAuthenticated: boolean;
-  setSession: (user: AppUser, accessToken: string) => void;
+  setSession: (user: AppUser, accessToken: string, refreshToken: string) => void;
   setUser: (user: AppUser | null) => void;
   setAccessToken: (accessToken: string | null) => void;
+  setRefreshToken: (refreshToken: string | null) => void;
   logout: () => void;
 }
 
@@ -37,6 +43,26 @@ const AppContext = createContext<AppContextValue | undefined>(undefined);
 export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [refreshToken, setRefreshToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const storedUser = localStorage.getItem("obituary.user");
+      const storedToken = localStorage.getItem("obituary.accessToken");
+      const storedRefreshToken = localStorage.getItem("obituary.refreshToken");
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+      }
+      if (storedToken) {
+        setAccessToken(storedToken);
+      }
+      if (storedRefreshToken) {
+        setRefreshToken(storedRefreshToken);
+      }
+    } catch (error) {
+      console.error("Failed to parse local storage user session", error);
+    }
+  }, []);
 
   const value = useMemo<AppContextValue>(() => {
     const role = user?.role ?? "guest";
@@ -44,20 +70,71 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return {
       user,
       accessToken,
+      refreshToken,
       role,
       isAuthenticated: Boolean(user && accessToken),
-      setSession: (nextUser, nextAccessToken) => {
+      setSession: (nextUser, nextAccessToken, nextRefreshToken) => {
         setUser(nextUser);
         setAccessToken(nextAccessToken);
+        setRefreshToken(nextRefreshToken);
+        try {
+          localStorage.setItem("obituary.user", JSON.stringify(nextUser));
+          localStorage.setItem("obituary.accessToken", nextAccessToken);
+          localStorage.setItem("obituary.refreshToken", nextRefreshToken);
+        } catch (error) {
+          console.error("Failed to save session to local storage", error);
+        }
       },
-      setUser,
-      setAccessToken,
+      setUser: (nextUser) => {
+        setUser(nextUser);
+        try {
+          if (nextUser) {
+            localStorage.setItem("obituary.user", JSON.stringify(nextUser));
+          } else {
+            localStorage.removeItem("obituary.user");
+          }
+        } catch (error) {
+          // Ignore
+        }
+      },
+      setAccessToken: (nextAccessToken) => {
+        setAccessToken(nextAccessToken);
+        try {
+          if (nextAccessToken) {
+            localStorage.setItem("obituary.accessToken", nextAccessToken);
+          } else {
+            localStorage.removeItem("obituary.accessToken");
+          }
+        } catch (error) {
+          // Ignore
+        }
+      },
+      setRefreshToken: (nextRefreshToken) => {
+        setRefreshToken(nextRefreshToken);
+        try {
+          if (nextRefreshToken) {
+            localStorage.setItem("obituary.refreshToken", nextRefreshToken);
+          } else {
+            localStorage.removeItem("obituary.refreshToken");
+          }
+        } catch (error) {
+          // Ignore
+        }
+      },
       logout: () => {
         setUser(null);
         setAccessToken(null);
+        setRefreshToken(null);
+        try {
+          localStorage.removeItem("obituary.user");
+          localStorage.removeItem("obituary.accessToken");
+          localStorage.removeItem("obituary.refreshToken");
+        } catch (error) {
+          // Ignore
+        }
       },
     };
-  }, [accessToken, user]);
+  }, [user, accessToken, refreshToken]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

@@ -15,5 +15,7 @@ router.post(
   ]),
   profileController.uploadProfilePhoto,
 );
+router.post("/apply-token", authMiddleware, profileController.applyToken);
+router.post("/approve-token/:userId", authMiddleware, profileController.approveToken);
 
 module.exports = router;

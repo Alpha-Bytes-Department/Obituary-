@@ -1,3 +1,5 @@
+import { FaFacebook, FaYoutube } from "react-icons/fa";
+
 /**
  * Renders the application footer.
  *
@@ -18,14 +20,14 @@ export default function Footer() {
                 aria-label="Facebook"
                 className="grid h-9 w-9 place-items-center rounded-full border border-white/20 transition hover:bg-white/10"
               >
-                F
+                <FaFacebook size={35}/>
               </a>
               <a
                 href="#"
                 aria-label="YouTube"
-                className="grid h-9 w-9 place-items-center rounded-md border border-white/20 transition hover:bg-white/10"
+                className="grid h-9 w-9 place-items-center rounded-md  transition hover:bg-white/10"
               >
-                ▶
+                <FaYoutube size={40}/>
               </a>
             </div>
           </div>

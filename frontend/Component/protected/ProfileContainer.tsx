@@ -8,6 +8,7 @@ import DashboardStatsGrid from "./profile-dashboard/DashboardStatsGrid";
 import DeleteSubmissionDialog from "./profile-dashboard/DeleteSubmissionDialog";
 import MemorialSubmissionsTable from "./profile-dashboard/MemorialSubmissionsTable";
 import ProfileHeaderCard from "./profile-dashboard/ProfileHeaderCard";
+import ProfileFuneralHomeSection from "./profile-dashboard/ProfileFuneralHomeSection";
 import SubmissionEditDialog from "./profile-dashboard/SubmissionEditDialog";
 import { fallbackUser, initialSubmissions } from "./profile-dashboard/data";
 import type {
@@ -134,6 +135,7 @@ export default function ProfileContainer() {
      
     >
       <ProfileHeaderCard user={displayUser} />
+      <ProfileFuneralHomeSection />
       <CouponStatusCard />
       <DashboardStatsGrid
         total={stats.total}

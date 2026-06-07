@@ -12,8 +12,26 @@ const morgan = require("morgan");
  */
 function registerMiddlewares(app) {
   app.use(helmet());
-  app.use(morgan("dev"));
-  app.use(cors({ origin: "*" }));
+   app.use(morgan("dev"));
+   const allowedOrigins = [
+     "https://qbits-demo.vercel.app",
+     "http://localhost:4000",
+     "http://localhost:3000",
+   ];
+   app.use(
+     cors({
+       origin: (origin, callback) => {
+         if (!origin || allowedOrigins.includes(origin)) {
+           callback(null, true);
+         } else {
+           callback(new Error("Not allowed by CORS"));
+         }
+       },
+       credentials: true,
+       methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+       allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
+     }),
+   );
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
   app.use(cookieParser());

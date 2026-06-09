@@ -96,9 +96,7 @@ export default function Navbar() {
           </button>
 
           <Link href="/" className="flex flex-col leading-none">
-            <span className="font-heading text-[1.95rem] tracking-[-0.03em] text-[#1e3a5f]">
-              Funeral Home
-            </span>
+            <Image src={"/logo.png"} alt="Logo" width={100} height={100} />
           </Link>
         </div>
 
@@ -294,7 +292,7 @@ export default function Navbar() {
                       </span>
                     </span>
                   </div>
-                  
+
                   <Link
                     href="/profile"
                     onClick={() => setMenuOpen(false)}
@@ -302,7 +300,7 @@ export default function Navbar() {
                   >
                     Profile
                   </Link>
-                  
+
                   <button
                     type="button"
                     onClick={() => {

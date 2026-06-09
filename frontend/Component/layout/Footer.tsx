@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { FaFacebook, FaYoutube } from "react-icons/fa";
 
 /**
@@ -11,23 +12,21 @@ export default function Footer() {
       <div className="mx-auto  max-w-[90vw] px-4 py-16 sm:px-6 lg:px-8">
         <div className="grid gap-12 lg:grid-cols-[1.1fr_1fr_1fr_1fr]">
           <div className="space-y-6">
-            <h2 className="font-heading text-3xl tracking-[-0.03em] text-white">
-              Funeral Home
-            </h2>
+            <Image src={"/logo.png"} alt="Logo" width={100} height={100} />
             <div className="flex items-center gap-4 text-white/90">
               <a
                 href="#"
                 aria-label="Facebook"
                 className="grid h-9 w-9 place-items-center rounded-full border border-white/20 transition hover:bg-white/10"
               >
-                <FaFacebook size={35}/>
+                <FaFacebook size={35} />
               </a>
               <a
                 href="#"
                 aria-label="YouTube"
                 className="grid h-9 w-9 place-items-center rounded-md  transition hover:bg-white/10"
               >
-                <FaYoutube size={40}/>
+                <FaYoutube size={40} />
               </a>
             </div>
           </div>

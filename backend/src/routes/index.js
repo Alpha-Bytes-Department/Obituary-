@@ -8,6 +8,7 @@ function registerRoutes(app) {
   app.use("/api/memorials", memorialRoutes);
   app.use("/api/ads", require("./adminAdRoutes"));
   app.use("/api/condolences", require("./condolenceRoutes"));
+  app.use("/api/donations", require("./donationRoutes"));
   app.use("/api/admin", require("./adminRoutes"));
 }
 

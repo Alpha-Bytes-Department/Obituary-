@@ -4,15 +4,17 @@ import Image from "next/image";
 import React from "react";
 import { SponsoredCard } from "./types";
 
+function normalizeUrl(url?: string): string {
+  if (!url) return "#";
+  if (/^https?:\/\//i.test(url)) return url;
+  return `https://${url}`;
+}
+
 /**
  * SponsoredCardView
  *
  * Renders an advertisement/sponsored card where the image covers the card and
- * the copy (title + description) is placed below on a dark underlay. The
- * label is intentionally omitted per design.
- *
- * Props:
- * - `card`: the `SponsoredCard` data to render
+ * the copy (title + description) is placed below on a dark underlay.
  */
 export default function SponsoredCardView({ card }: { card: SponsoredCard }) {
   const content = (
@@ -36,7 +38,7 @@ export default function SponsoredCardView({ card }: { card: SponsoredCard }) {
   );
 
   return card.link ? (
-    <a href={card.link} target="_blank" rel="noreferrer" className="block h-full cursor-pointer">
+    <a href={normalizeUrl(card.link)} target="_blank" rel="noreferrer noopener" className="block h-full cursor-pointer">
       {content}
     </a>
   ) : (

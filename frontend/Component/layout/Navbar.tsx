@@ -20,10 +20,10 @@ const userLinks: NavItem[] = [
 ];
 
 const adminLinks: NavItem[] = [
-  { label: "Home", href: "/" },
   { label: "Users", href: "/admin/users" },
   { label: "Memorials", href: "/admin/memorials" },
   { label: "Ads", href: "/admin/ads" },
+  { label: "Donations", href: "/admin/donations" },
 ];
 
 const publicLinks: NavItem[] = [

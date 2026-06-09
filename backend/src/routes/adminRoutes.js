@@ -1,10 +1,11 @@
 const express = require("express");
 const router = express.Router();
 const adminController = require("../controllers/adminController");
+const { getAllDonations, deleteDonation } = require("../controllers/donationController");
 const authMiddleware = require("../middlewares/authMiddleware");
 const upload = require("../middlewares/uploadMiddleware");
 
-// Admin middleware
+// Admin guard middleware
 const adminOnly = (req, res, next) => {
   if (req.user && req.user.role === "admin") {
     next();
@@ -24,10 +25,17 @@ const uploadFields = upload.fields([
 
 router.use(authMiddleware, adminOnly);
 
+// User management
 router.get("/users", adminController.getAllUsers);
 router.delete("/users/:id", adminController.deleteUser);
+router.post("/users/:id/approve-coupon", adminController.approveCoupon);
+
+// Memorial management
 router.get("/memorials", adminController.getAllMemorials);
 router.put("/memorials/:id", uploadFields, adminController.updateMemorial);
-router.post("/users/:id/approve-coupon", adminController.approveCoupon);
+
+// Donations (read-only for admin dashboard)
+router.get("/donations", getAllDonations);
+router.delete("/donations/:id", deleteDonation);
 
 module.exports = router;

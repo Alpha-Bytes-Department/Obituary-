@@ -34,6 +34,7 @@ export default function SubmissionEditDialog({
   onClose: () => void;
 }) {
   const [draft, setDraft] = useState<SubmissionDraft | null>(null);
+  const [activeTab, setActiveTab] = useState<"general" | "content">("general");
 
   useEffect(() => {
     setDraft(submission ? buildDraft(submission) : null);
@@ -70,104 +71,168 @@ export default function SubmissionEditDialog({
           </DialogHeader>
 
           {draft ? (
-            <div className="mt-5 grid gap-4 md:grid-cols-2">
-              <Field label="Memorial Image URL">
-                <input
-                  value={draft.memorialImage}
-                  onChange={(event) =>
-                    updateField("memorialImage", event.target.value)
-                  }
-                  className="h-11 w-full rounded-md border border-[#ddd6cd] bg-white px-3 text-sm outline-none transition focus:border-[#233f68]"
-                />
-              </Field>
-              <Field label="Status">
-                <select
-                  value={draft.status}
-                  onChange={(event) =>
-                    updateField(
-                      "status",
-                      event.target.value as SubmissionDraft["status"],
-                    )
-                  }
-                  className="h-11 w-full rounded-md border border-[#ddd6cd] bg-white px-3 text-sm outline-none transition focus:border-[#233f68]"
-                >
-                  <option value="pending">Pending</option>
-                  <option value="approved">Approved</option>
-                  <option value="rejected">Rejected</option>
-                </select>
-              </Field>
-              <Field label="First Name">
-                <input
-                  value={draft.deceasedFirstName}
-                  onChange={(event) =>
-                    updateField("deceasedFirstName", event.target.value)
-                  }
-                  className="h-11 w-full rounded-md border border-[#ddd6cd] bg-white px-3 text-sm outline-none transition focus:border-[#233f68]"
-                />
-              </Field>
-              <Field label="Last Name">
-                <input
-                  value={draft.deceasedLastName}
-                  onChange={(event) =>
-                    updateField("deceasedLastName", event.target.value)
-                  }
-                  className="h-11 w-full rounded-md border border-[#ddd6cd] bg-white px-3 text-sm outline-none transition focus:border-[#233f68]"
-                />
-              </Field>
-              <Field className="md:col-span-2" label="Rejection Notice">
-                <textarea
-                  value={draft.rejectionReason}
-                  onChange={(event) =>
-                    updateField("rejectionReason", event.target.value)
-                  }
-                  className="min-h-24 w-full rounded-md border border-[#ddd6cd] bg-white px-3 py-2 text-sm outline-none transition focus:border-[#233f68]"
-                />
-              </Field>
-              <Field label="Date of Birth">
-                <input
-                  type="date"
-                  value={draft.dateOfBirth}
-                  onChange={(event) =>
-                    updateField("dateOfBirth", event.target.value)
-                  }
-                  className="h-11 w-full rounded-md border border-[#ddd6cd] bg-white px-3 text-sm outline-none transition focus:border-[#233f68]"
-                />
-              </Field>
-              <Field label="Date of Death">
-                <input
-                  type="date"
-                  value={draft.dateOfDeath}
-                  onChange={(event) =>
-                    updateField("dateOfDeath", event.target.value)
-                  }
-                  className="h-11 w-full rounded-md border border-[#ddd6cd] bg-white px-3 text-sm outline-none transition focus:border-[#233f68]"
-                />
-              </Field>
-              <Field label="Payment Method">
-                <select
-                  value={draft.paymentMethod}
-                  onChange={(event) =>
-                    updateField(
-                      "paymentMethod",
-                      event.target.value as SubmissionDraft["paymentMethod"],
-                    )
-                  }
-                  className="h-11 w-full rounded-md border border-[#ddd6cd] bg-white px-3 text-sm outline-none transition focus:border-[#233f68]"
-                >
-                  <option value="stripe">Stripe</option>
-                  <option value="token">Token</option>
-                  <option value="admin_override">Admin Override</option>
-                </select>
-              </Field>
-              <Field className="md:col-span-2" label="Biography">
-                <textarea
-                  value={draft.biography}
-                  onChange={(event) =>
-                    updateField("biography", event.target.value)
-                  }
-                  className="min-h-28 w-full rounded-md border border-[#ddd6cd] bg-white px-3 py-2 text-sm outline-none transition focus:border-[#233f68]"
-                />
-              </Field>
+            <div className="mt-5">
+              <div className="flex space-x-4 border-b border-[#ece5dc] mb-5">
+                <button 
+                  onClick={() => setActiveTab("general")} 
+                  className={`pb-2 px-1 text-sm ${activeTab === "general" ? "border-b-2 border-[#233f68] font-semibold text-[#233f68]" : "text-slate-500"}`}>
+                  General Info
+                </button>
+                <button 
+                  onClick={() => setActiveTab("content")} 
+                  className={`pb-2 px-1 text-sm ${activeTab === "content" ? "border-b-2 border-[#233f68] font-semibold text-[#233f68]" : "text-slate-500"}`}>
+                  Memorial Content
+                </button>
+              </div>
+
+              {activeTab === "general" && (
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Field label="Status">
+                    <select
+                      value={draft.status}
+                      onChange={(event) =>
+                        updateField(
+                          "status",
+                          event.target.value as SubmissionDraft["status"],
+                        )
+                      }
+                      className="h-11 w-full rounded-md border border-[#ddd6cd] bg-white px-3 text-sm outline-none transition focus:border-[#233f68]"
+                    >
+                      <option value="pending">Pending</option>
+                      <option value="approved">Approved</option>
+                      <option value="rejected">Rejected</option>
+                    </select>
+                  </Field>
+                  
+                  <Field label="Full Name">
+                    <input
+                      value={draft.name}
+                      onChange={(event) =>
+                        updateField("name", event.target.value)
+                      }
+                      className="h-11 w-full rounded-md border border-[#ddd6cd] bg-white px-3 text-sm outline-none transition focus:border-[#233f68]"
+                    />
+                  </Field>
+                  <Field label="Relation To Deceased">
+                    <input
+                      value={draft.relationToDeceased}
+                      onChange={(event) =>
+                        updateField("relationToDeceased", event.target.value)
+                      }
+                      className="h-11 w-full rounded-md border border-[#ddd6cd] bg-white px-3 text-sm outline-none transition focus:border-[#233f68]"
+                    />
+                  </Field>
+                  
+                  <Field label="Location (City)">
+                    <input
+                      value={draft.location}
+                      onChange={(event) =>
+                        updateField("location", event.target.value)
+                      }
+                      className="h-11 w-full rounded-md border border-[#ddd6cd] bg-white px-3 text-sm outline-none transition focus:border-[#233f68]"
+                    />
+                  </Field>
+                  <Field label="Country">
+                    <input
+                      value={draft.country}
+                      onChange={(event) =>
+                        updateField("country", event.target.value)
+                      }
+                      className="h-11 w-full rounded-md border border-[#ddd6cd] bg-white px-3 text-sm outline-none transition focus:border-[#233f68]"
+                    />
+                  </Field>
+
+                  <Field label="Date of Birth">
+                    <input
+                      type="date"
+                      value={draft.dateOfBirth}
+                      onChange={(event) =>
+                        updateField("dateOfBirth", event.target.value)
+                      }
+                      className="h-11 w-full rounded-md border border-[#ddd6cd] bg-white px-3 text-sm outline-none transition focus:border-[#233f68]"
+                    />
+                  </Field>
+                  <Field label="Date of Death">
+                    <input
+                      type="date"
+                      value={draft.dateOfDeath}
+                      onChange={(event) =>
+                        updateField("dateOfDeath", event.target.value)
+                      }
+                      className="h-11 w-full rounded-md border border-[#ddd6cd] bg-white px-3 text-sm outline-none transition focus:border-[#233f68]"
+                    />
+                  </Field>
+
+                  <Field className="md:col-span-2" label="Rejection Notice (Internal)">
+                    <textarea
+                      value={draft.rejectionReason}
+                      onChange={(event) =>
+                        updateField("rejectionReason", event.target.value)
+                      }
+                      className="min-h-24 w-full rounded-md border border-[#ddd6cd] bg-white px-3 py-2 text-sm outline-none transition focus:border-[#233f68]"
+                    />
+                  </Field>
+                </div>
+              )}
+
+              {activeTab === "content" && (
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Field className="md:col-span-2" label="Memorial Details (Obituary Text)">
+                    <textarea
+                      value={draft.memorialDetails}
+                      onChange={(event) =>
+                        updateField("memorialDetails", event.target.value)
+                      }
+                      className="min-h-28 w-full rounded-md border border-[#ddd6cd] bg-white px-3 py-2 text-sm outline-none transition focus:border-[#233f68]"
+                    />
+                  </Field>
+                  <Field className="md:col-span-2" label="Life Story">
+                    <textarea
+                      value={draft.lifeStory}
+                      onChange={(event) =>
+                        updateField("lifeStory", event.target.value)
+                      }
+                      className="min-h-24 w-full rounded-md border border-[#ddd6cd] bg-white px-3 py-2 text-sm outline-none transition focus:border-[#233f68]"
+                    />
+                  </Field>
+                  <Field className="md:col-span-2" label="Family Details">
+                    <textarea
+                      value={draft.familyDetails}
+                      onChange={(event) =>
+                        updateField("familyDetails", event.target.value)
+                      }
+                      className="min-h-20 w-full rounded-md border border-[#ddd6cd] bg-white px-3 py-2 text-sm outline-none transition focus:border-[#233f68]"
+                    />
+                  </Field>
+                  <Field className="md:col-span-2" label="Career Summary">
+                    <textarea
+                      value={draft.careerSummery}
+                      onChange={(event) =>
+                        updateField("careerSummery", event.target.value)
+                      }
+                      className="min-h-20 w-full rounded-md border border-[#ddd6cd] bg-white px-3 py-2 text-sm outline-none transition focus:border-[#233f68]"
+                    />
+                  </Field>
+                  <Field label="Favorite Quote">
+                    <input
+                      value={draft.favouriteQuote}
+                      onChange={(event) =>
+                        updateField("favouriteQuote", event.target.value)
+                      }
+                      className="h-11 w-full rounded-md border border-[#ddd6cd] bg-white px-3 text-sm outline-none transition focus:border-[#233f68]"
+                    />
+                  </Field>
+                  <Field label="Remembered For Ever Quote">
+                    <input
+                      value={draft.rememberForEverQuote}
+                      onChange={(event) =>
+                        updateField("rememberForEverQuote", event.target.value)
+                      }
+                      className="h-11 w-full rounded-md border border-[#ddd6cd] bg-white px-3 text-sm outline-none transition focus:border-[#233f68]"
+                    />
+                  </Field>
+                </div>
+              )}
             </div>
           ) : null}
 

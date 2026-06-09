@@ -11,9 +11,10 @@ export type FuneralAdviceArticle = {
   }>;
 };
 
-export type SponsoredCard = {
+export interface SponsoredCard {
   label: string;
   title: string;
   description: string;
   image: string;
+  link?: string;
 };

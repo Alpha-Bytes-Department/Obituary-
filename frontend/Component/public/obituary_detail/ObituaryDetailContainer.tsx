@@ -20,6 +20,7 @@ import {
 } from "react-icons/fa";
 import { FiCopy } from "react-icons/fi";
 
+import { useAxios } from "../../../context/AxiosProvider";
 import { mockObituaries, type ObituaryMock } from "../../../lib/mockData";
 import {
   Dialog,
@@ -284,31 +285,61 @@ export default function ObituaryDetailContainer({
   const [tributes, setTributes] = useState<TributeItem[]>([]);
   const [tributeType, setTributeType] = useState<TributeType>("candle");
   const [tributeText, setTributeText] = useState("");
+  const [tributeName, setTributeName] = useState("");
+  const [tributeEmail, setTributeEmail] = useState("");
+  const [isSubmittingTribute, setIsSubmittingTribute] = useState(false);
+
+  const api = useAxios();
 
   useEffect(() => {
-    const mockItem = mockObituaries.find((entry) => entry.id === id);
-    setItem(mockItem ?? mockObituaries[0] ?? null);
-  }, [id]);
+    const fetchMemorial = async () => {
+      try {
+        const res = await api.get(`/memorials/${id}`);
+        const m = res.data.memorial;
+        if (m) {
+          setItem({
+            id: m._id,
+            name: m.name,
+            deceasedFirstName: m.name.split(" ")[0],
+            deceasedLastName: m.name.split(" ").slice(1).join(" "),
+            dateOfBirth: m.birthdate || "",
+            dateOfDeath: m.deathDate || "",
+            location: {
+              country: m.country,
+              city: m.location ? m.location.split(",")[0] : "",
+              state: ""
+            },
+            images: m.deadPersonPhoto || [],
+            image: m.deadPersonPhoto?.[0] || "/Source/Placeholder_Person.png",
+            description: m.memorialDetails,
+            biography: m.memorialDetails,
+            excerpt: m.memorialDetails,
+            headline: m.lifeStory || m.memorialDetails || "In Loving Memory",
+          } as ObituaryMock);
+        }
+      } catch (err) {
+        console.error("Failed to fetch memorial:", err);
+      }
+    };
+    fetchMemorial();
+  }, [id, api]);
 
   useEffect(() => {
-    setTributes([
-      {
-        id: "seed-candle-1",
-        type: "candle",
-        text: "Your beautiful memory will live on with us forever.",
-      },
-      {
-        id: "seed-candle-2",
-        type: "candle",
-        text: "Your beautiful memory will live on with us forever.",
-      },
-      {
-        id: "seed-flower-1",
-        type: "flower",
-        text: "Your beautiful memory will live on with us forever.",
-      },
-    ]);
-  }, [id]);
+    const fetchCondolences = async () => {
+      try {
+        const res = await api.get(`/condolences/${id}`);
+        const data = res.data.condolences || [];
+        setTributes(data.map((c: any) => ({
+          id: c._id,
+          type: c.type,
+          text: c.message
+        })));
+      } catch (err) {
+        console.error("Failed to fetch condolences:", err);
+      }
+    };
+    fetchCondolences();
+  }, [id, api]);
 
   useEffect(() => {
     setShareUrl(window.location.href);
@@ -339,24 +370,45 @@ export default function ObituaryDetailContainer({
     window.setTimeout(() => setCopied(false), 1800);
   };
 
-  const handleAddTribute = () => {
+  const handleAddTribute = async () => {
     const text = tributeText.trim();
 
-    if (!text) {
+    if (!text || !tributeName.trim() || !tributeEmail.trim()) {
+      alert("Please fill in all fields.");
       return;
     }
 
-    setTributes((current) => [
-      {
-        id: Date.now().toString(),
-        type: tributeType,
-        text,
-      },
-      ...current,
-    ]);
-    setTributeText("");
-    setTributeType("candle");
-    setIsTributeOpen(false);
+    setIsSubmittingTribute(true);
+    try {
+      const res = await api.post(`/condolences/${id}`, {
+        submitterEmail: tributeEmail,
+        submitterName: tributeName,
+        message: text,
+        type: tributeType
+      });
+      setTributes((current) => [
+        {
+          id: res.data.condolence._id,
+          type: tributeType,
+          text,
+        },
+        ...current,
+      ]);
+      setTributeText("");
+      setTributeName("");
+      setTributeEmail("");
+      setTributeType("candle");
+      setIsTributeOpen(false);
+    } catch (err: any) {
+      console.error(err);
+      if (err.response?.data?.message) {
+         alert(err.response.data.message);
+      } else {
+         alert("Failed to submit tribute. Please try again.");
+      }
+    } finally {
+      setIsSubmittingTribute(false);
+    }
   };
 
   if (!item) {
@@ -958,6 +1010,32 @@ export default function ObituaryDetailContainer({
             <div className="mt-5 grid gap-4">
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700">
+                  Your Name
+                </label>
+                <input
+                  type="text"
+                  value={tributeName}
+                  onChange={(event) => setTributeName(event.target.value)}
+                  placeholder="John Doe"
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-slate-400"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-700">
+                  Your Email
+                </label>
+                <input
+                  type="email"
+                  value={tributeEmail}
+                  onChange={(event) => setTributeEmail(event.target.value)}
+                  placeholder="john@example.com"
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition focus:border-slate-400"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-700">
                   Tribute type
                 </label>
                 <select
@@ -994,10 +1072,11 @@ export default function ObituaryDetailContainer({
                 </button>
                 <button
                   type="button"
+                  disabled={isSubmittingTribute}
                   onClick={handleAddTribute}
-                  className="rounded-full bg-[#274877] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#1f3a60]"
+                  className="rounded-full bg-[#274877] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#1f3a60] disabled:opacity-50"
                 >
-                  Add Tribute
+                  {isSubmittingTribute ? "Adding..." : "Add Tribute"}
                 </button>
               </div>
             </div>

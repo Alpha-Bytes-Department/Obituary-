@@ -1,18 +1,76 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
-import { Suspense } from "react";
-import {
-  allTimeMemorableObituaries,
-  featuredTodayObituaries,
-} from "../../../lib/mockData";
+import { Suspense, useEffect, useState } from "react";
+import { useAxios } from "../../../context/AxiosProvider";
 
 import AllTimeGrid from "./AllTimeGrid";
 import FeaturedGrid from "./FeaturedGrid";
 import HeroSearch from "./HeroSearch";
 import FuneralAdviceSection from "./FuneralAdviceSection";
 import { testimonials } from "./data";
+import { ObituaryMock } from "../../../lib/mockData";
 
 export default function HomeContainer() {
+  const api = useAxios();
+  const [featuredObituaries, setFeaturedObituaries] = useState<ObituaryMock[]>([]);
+  const [allTimeObituaries, setAllTimeObituaries] = useState<ObituaryMock[]>([]);
+  const [ads, setAds] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [memorialsRes, adsRes] = await Promise.all([
+          api.get("/memorials"),
+          api.get("/ads")
+        ]);
+
+        const memorials = memorialsRes.data.memorials || [];
+        const mappedMemorials: ObituaryMock[] = memorials.map((m: any) => {
+          const nameParts = m.name ? m.name.split(" ") : [];
+          const deceasedFirstName = nameParts[0] || "";
+          const deceasedLastName = nameParts.slice(1).join(" ") || "";
+          
+          const locParts = m.location ? m.location.split(",") : [];
+          const city = locParts[0]?.trim() || "";
+          const state = locParts[1]?.trim() || "";
+          const country = m.country || locParts[2]?.trim() || "";
+
+          let age: number | undefined = undefined;
+          if (m.birthdate && m.deathDate) {
+            const birth = new Date(m.birthdate);
+            const death = new Date(m.deathDate);
+            if (!isNaN(birth.getTime()) && !isNaN(death.getTime())) {
+              age = death.getFullYear() - birth.getFullYear();
+            }
+          }
+
+          return {
+            id: m._id,
+            deceasedFirstName,
+            deceasedLastName,
+            dateOfBirth: m.birthdate || "",
+            dateOfDeath: m.deathDate || "",
+            location: { city, state, country },
+            age,
+            memorialQuote: m.favouriteQuote || m.rememberForEverQuote || "",
+            images: m.deadPersonPhoto && m.deadPersonPhoto.length > 0 ? m.deadPersonPhoto : ["/Source/Placeholder_Person.png"],
+            biography: m.memorialDetails || m.lifeStory || "",
+            excerpt: m.careerSummery || m.memorialDetails || "",
+          };
+        });
+
+        setFeaturedObituaries(mappedMemorials.slice(0, 4));
+        setAllTimeObituaries(mappedMemorials.slice(4));
+        setAds(adsRes.data.ads || []);
+      } catch (error) {
+        console.error("Failed to fetch home data:", error);
+      }
+    };
+    fetchData();
+  }, [api]);
+
   return (
     <main className="space-y-16">
       <section className="overflow-hidden rounded-[2rem] border border-black/5 bg-[#111827] shadow-[0_30px_90px_rgba(15,23,42,0.22)]">
@@ -77,7 +135,7 @@ export default function HomeContainer() {
             </p>
           </div>
         </div>
-        <FeaturedGrid items={featuredTodayObituaries} />
+        <FeaturedGrid items={featuredObituaries} ad={ads.find(a => a.placementType === 'featured') || ads[0]} />
       </section>
 
       <section className="space-y-5">
@@ -90,10 +148,10 @@ export default function HomeContainer() {
             their life stories alive.
           </p>
         </div>
-        <AllTimeGrid items={allTimeMemorableObituaries} />
+        <AllTimeGrid items={allTimeObituaries} />
       </section>
 
-      <FuneralAdviceSection />
+      <FuneralAdviceSection dynamicAds={ads} />
       <section className="rounded-sm bg-[#d8ad59] px-6 py-12 sm:px-10">
         <div className="max-w-6xl mx-auto text-center">
           <h2 className="font-heading text-3xl sm:text-4xl font-semibold text-[#132855]">
@@ -110,7 +168,7 @@ export default function HomeContainer() {
                 key={t.id}
                 className="rounded-sm bg-white p-6 text-left shadow-sm"
               >
-                <p className="text-slate-700 mb-4">" {t.quote} "</p>
+                <p className="text-slate-700 mb-4">&quot; {t.quote} &quot;</p>
                 <p className="font-semibold text-[#132855]">{t.author}</p>
               </div>
             ))}

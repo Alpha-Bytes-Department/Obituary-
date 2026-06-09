@@ -1,0 +1,107 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { useAxios } from "../../../context/AxiosProvider";
+import MemorialSubmissionsTable from "../profile-dashboard/MemorialSubmissionsTable";
+import AdminEditDialog from "./AdminEditDialog";
+import type { MemorialSubmission } from "../profile-dashboard/types";
+
+export default function MemorialsManagement() {
+  const api = useAxios();
+  const [submissions, setSubmissions] = useState<MemorialSubmission[]>([]);
+  const [selectedSubmission, setSelectedSubmission] = useState<MemorialSubmission | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const mapMemorial = (m: any): MemorialSubmission => ({
+    id: m._id,
+    obituaryId: m._id,
+    memorialImage: m.deadPersonPhoto?.[0] || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=900&q=80",
+    deceasedFirstName: m.name ? m.name.split(" ")[0] : "",
+    deceasedLastName: m.name ? m.name.split(" ").slice(1).join(" ") : "",
+    rejectionReason: m.rejectionReason || "",
+    dateOfBirth: m.birthdate || "",
+    dateOfDeath: m.deathDate || "",
+    biography: m.memorialDetails || "",
+    status: m.status || "pending",
+    paymentMethod: m.paymentMethod || "stripe",
+    createdAt: m.createdAt,
+    updatedAt: m.updatedAt,
+    submittedAt: m.submittedAt || m.createdAt,
+
+    name: m.name || "",
+    location: m.location || "",
+    country: m.country || "",
+    memorialDetails: m.memorialDetails || "",
+    familyDetails: m.familyDetails || "",
+    lifeStory: m.lifeStory || "",
+    rememberForEverQuote: m.rememberForEverQuote || "",
+    favouriteQuote: m.favouriteQuote || "",
+    careerSummery: m.careerSummery || "",
+    relationToDeceased: m.relationToDeceased || "",
+    funeralNotice: m.funeralNotice,
+
+    // Images & raw data
+    funeralHomeLogo: m.funeralHomeLogo || "",
+    deadPersonPhoto: m.deadPersonPhoto || [],
+    familyTreeDiagram: m.familyTreeDiagram || "",
+    funeralHomeDetails: m.funeralHomeDetails || {},
+    funeralHomeAdvertisement: m.funeralHomeAdvertisement || [],
+
+    // Visibility flags
+    memorialDetailVisibilityStatus: m.memorialDetailVisibilityStatus ?? true,
+    familyDetailVisibilityStatus: m.familyDetailVisibilityStatus ?? true,
+    lifeStoryVisibilityStatus: m.lifeStoryVisibilityStatus ?? true,
+    rememberForEverQuoteVisibilityStatus: m.rememberForEverQuoteVisibilityStatus ?? true,
+    favouriteQuoteVisibilityStatus: m.favouriteQuoteVisibilityStatus ?? true,
+    careerSummeryVisibilityStatus: m.careerSummeryVisibilityStatus ?? true,
+  });
+
+  const fetchMemorials = async () => {
+    try {
+      const res = await api.get("/admin/memorials");
+      setSubmissions(res.data.memorials.map(mapMemorial));
+    } catch (error) {
+      toast.error("Failed to fetch memorials");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMemorials();
+  }, [api]);
+
+  const handleSaved = (updatedRaw: any) => {
+    const updated = mapMemorial(updatedRaw);
+    setSubmissions((current) =>
+      current.map((s) => (s.id === updated.id ? updated : s))
+    );
+    setSelectedSubmission(null);
+    toast.success("Memorial updated successfully.");
+  };
+
+  if (loading) return <div className="p-8 text-center">Loading memorials...</div>;
+
+  return (
+    <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <h1 className="mb-8 font-heading text-3xl font-semibold text-[#1e3a5f]">
+        Memorials Management
+      </h1>
+
+      <MemorialSubmissionsTable
+        submissions={submissions}
+        onEdit={setSelectedSubmission}
+        onDelete={() => {}}
+      />
+
+      {selectedSubmission && (
+        <AdminEditDialog
+          submission={selectedSubmission}
+          onSaved={handleSaved}
+          onClose={() => setSelectedSubmission(null)}
+        />
+      )}
+    </div>
+  );
+}

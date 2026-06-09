@@ -21,9 +21,9 @@ const userLinks: NavItem[] = [
 
 const adminLinks: NavItem[] = [
   { label: "Home", href: "/" },
-  { label: "Admin Dashboard", href: "/admin" },
-  { label: "Profile", href: "/profile" },
-  { label: "Create Obituary", href: "/profile/create" },
+  { label: "Users", href: "/admin/users" },
+  { label: "Memorials", href: "/admin/memorials" },
+  { label: "Ads", href: "/admin/ads" },
 ];
 
 const publicLinks: NavItem[] = [

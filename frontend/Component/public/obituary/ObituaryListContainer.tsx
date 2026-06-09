@@ -11,6 +11,9 @@ import PaginationControls from "./components/PaginationControls";
 import SearchToolbar from "./components/SearchToolbar";
 import type { FilterGroupKey, SortValue } from "./types";
 
+import { useAxios } from "../../../context/AxiosProvider";
+import { useSearchParams } from "next/navigation";
+
 const PAGE_SIZE = 6;
 
 /**
@@ -58,8 +61,8 @@ function getSearchText(obituary: ObituaryMock): string {
     obituary.location.country,
     obituary.dateOfBirth,
     obituary.dateOfDeath,
-    formatDate(obituary.dateOfBirth ?? obituary.dateOfDeath),
-    formatDate(obituary.dateOfDeath),
+    obituary.dateOfBirth ? formatDate(obituary.dateOfBirth) : "",
+    obituary.dateOfDeath ? formatDate(obituary.dateOfDeath) : "",
   ]
     .filter(Boolean)
     .join(" ")
@@ -140,8 +143,64 @@ function matchesCountryFilters(
  * Renders the obituary listing page.
  */
 export default function ObituaryListContainer() {
-  const [query, setQuery] = useState("");
+  const searchParams = useSearchParams();
+  const [query, setQuery] = useState(searchParams?.get("q") ?? "");
   const [sortOption, setSortOption] = useState<SortValue>("");
+  const api = useAxios();
+  const [obituaries, setObituaries] = useState<ObituaryMock[]>([]);
+  const [ad, setAd] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [memRes, adRes] = await Promise.all([
+          api.get("/memorials"),
+          api.get("/ads")
+        ]);
+        const mapped: ObituaryMock[] = memRes.data.memorials.map((m: any) => {
+          const nameParts = m.name ? m.name.split(" ") : [];
+          const deceasedFirstName = nameParts[0] || "";
+          const deceasedLastName = nameParts.slice(1).join(" ") || "";
+          
+          const locParts = m.location ? m.location.split(",") : [];
+          const city = locParts[0]?.trim() || "";
+          const state = locParts[1]?.trim() || "";
+          const country = m.country || locParts[2]?.trim() || "";
+
+          let age: number | undefined = undefined;
+          if (m.birthdate && m.deathDate) {
+            const birth = new Date(m.birthdate);
+            const death = new Date(m.deathDate);
+            if (!isNaN(birth.getTime()) && !isNaN(death.getTime())) {
+              age = death.getFullYear() - birth.getFullYear();
+            }
+          }
+
+          return {
+            id: m._id,
+            deceasedFirstName,
+            deceasedLastName,
+            dateOfBirth: m.birthdate || "",
+            dateOfDeath: m.deathDate || "",
+            location: { city, state, country },
+            age,
+            memorialQuote: m.favouriteQuote || m.rememberForEverQuote || "",
+            images: m.deadPersonPhoto && m.deadPersonPhoto.length > 0 ? m.deadPersonPhoto : ["/Source/Placeholder_Person.png"],
+            biography: m.memorialDetails || m.lifeStory || "",
+            excerpt: m.careerSummery || m.memorialDetails || "",
+          };
+        });
+        setObituaries(mapped);
+        
+        // Pick an ad for the filter section
+        const ads = adRes.data.ads || [];
+        setAd(ads.find((a: any) => a.placementType === 'special_row_1') || ads[0]);
+      } catch (err) {
+        console.error("Failed to fetch data:", err);
+      }
+    };
+    fetchData();
+  }, [api]);
   const [currentPage, setCurrentPage] = useState(1);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [publishDateFiltersSelected, setPublishDateFiltersSelected] = useState<
@@ -158,7 +217,7 @@ export default function ObituaryListContainer() {
   const filteredObituaries = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
-    const matched = mockObituaries.filter((obituary) => {
+    const matched = obituaries.filter((obituary) => {
       const matchesQuery =
         !normalizedQuery || getSearchText(obituary).includes(normalizedQuery);
       return (
@@ -192,7 +251,7 @@ export default function ObituaryListContainer() {
 
       return rightAge - leftAge;
     });
-  }, [countryFiltersSelected, publishDateFiltersSelected, query, sortOption]);
+  }, [countryFiltersSelected, publishDateFiltersSelected, query, sortOption, obituaries]);
 
   const totalPages = Math.max(
     1,
@@ -254,6 +313,19 @@ export default function ObituaryListContainer() {
               countryFiltersSelected={countryFiltersSelected}
               onToggle={handleToggleFilter}
             />
+            {ad && (
+              <div className="mt-8 rounded-xl border border-[#e6c08a] bg-[#f3d8aa] p-4 text-center">
+                <span className="text-xs font-semibold uppercase text-slate-500 block mb-2">{ad.placementType || "Sponsored"}</span>
+                <img src={ad.adImageUrl} alt={ad.adTitle} className="w-full h-auto rounded-md mb-3" />
+                <h4 className="font-heading font-semibold text-[#132855] text-lg">{ad.adTitle}</h4>
+                <p className="text-sm text-slate-700 mb-3">{ad.adDescription}</p>
+                {ad.adLinkUrl && (
+                  <a href={ad.adLinkUrl} className="inline-block px-4 py-2 bg-[#284c73] text-white rounded-md text-sm transition hover:bg-[#1f3b5a]">
+                    Learn More
+                  </a>
+                )}
+              </div>
+            )}
           </div>
         </aside>
 

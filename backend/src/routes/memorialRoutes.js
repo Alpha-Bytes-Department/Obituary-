@@ -15,7 +15,9 @@ const uploadFields = upload.fields([
 ]);
 
 router.post("/", authMiddleware, uploadFields, memorialController.createMemorial);
-router.get("/", memorialController.getMemorials);
+router.get("/", memorialController.getPublicMemorials);
+router.get("/user", authMiddleware, memorialController.getMemorials);
+router.get("/:id", memorialController.getMemorialById);
 router.put("/:id", authMiddleware, uploadFields, memorialController.updateMemorial);
 router.delete("/:id", authMiddleware, memorialController.deleteMemorial);
 

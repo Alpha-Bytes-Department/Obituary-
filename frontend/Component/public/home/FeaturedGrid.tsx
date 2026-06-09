@@ -29,9 +29,18 @@ const advertisement: Advertisement = {
  *
  * @param {object} props - Component props.
  * @param {ObituaryMock[]} props.items - Obituaries to render.
+ * @param {Advertisement} [props.ad] - Dynamic ad to render.
  * @returns {JSX.Element} The featured grid.
  */
-export default function FeaturedGrid({ items }: { items: ObituaryMock[] }) {
+export default function FeaturedGrid({ items, ad }: { items: ObituaryMock[], ad?: any }) {
+  const displayAd = ad ? {
+    label: ad.placementType || "Sponsored",
+    title: ad.adTitle,
+    description: ad.adDescription || "",
+    image: ad.adImageUrl,
+    link: ad.adLinkUrl,
+  } : advertisement;
+
   return (
     <div className="grid gap-6 lg:grid-cols-4 lg:items-stretch">
       <div className="min-w-0 p-4 lg:col-span-3 lg:p-5">
@@ -39,7 +48,7 @@ export default function FeaturedGrid({ items }: { items: ObituaryMock[] }) {
       </div>
 
       <div className="min-w-0">
-        <SponsoredAdvertisement item={advertisement} />
+        <SponsoredAdvertisement item={displayAd} />
       </div>
     </div>
   );

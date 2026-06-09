@@ -24,9 +24,53 @@ import {
 
 
 
-export default function FuneralAdviceSection() {
+export default function FuneralAdviceSection({ dynamicAds = [] }: { dynamicAds?: any[] }) {
   const [selectedArticle, setSelectedArticle] =
     useState<FuneralAdviceArticle | null>(null);
+
+  const adviceAds = dynamicAds.filter((a) => a.placementType === "funeral_advice");
+
+  const mappedRowOneSponsoredCards = [
+    adviceAds[0]
+      ? {
+          label: "Sponsored Story",
+          title: adviceAds[0].adTitle,
+          description: adviceAds[0].adDescription,
+          image: adviceAds[0].adImageUrl,
+          link: adviceAds[0].adLinkUrl,
+        }
+      : rowOneSponsoredCards[0],
+    adviceAds[1]
+      ? {
+          label: "Sponsored Story",
+          title: adviceAds[1].adTitle,
+          description: adviceAds[1].adDescription,
+          image: adviceAds[1].adImageUrl,
+          link: adviceAds[1].adLinkUrl,
+        }
+      : rowOneSponsoredCards[1],
+  ];
+
+  const mappedRowTwoSponsoredCards = [
+    adviceAds[2]
+      ? {
+          label: "Sponsored Story",
+          title: adviceAds[2].adTitle,
+          description: adviceAds[2].adDescription,
+          image: adviceAds[2].adImageUrl,
+          link: adviceAds[2].adLinkUrl,
+        }
+      : rowTwoSponsoredCards[0],
+    adviceAds[3]
+      ? {
+          label: "Sponsored Story",
+          title: adviceAds[3].adTitle,
+          description: adviceAds[3].adDescription,
+          image: adviceAds[3].adImageUrl,
+          link: adviceAds[3].adLinkUrl,
+        }
+      : rowTwoSponsoredCards[1],
+  ];
 
   return (
     <section className="space-y-8 px-0 py-0">
@@ -47,7 +91,7 @@ export default function FuneralAdviceSection() {
             ...rowOneArticles.slice(1),
             ...rowOneArticlesAdditional,
           ]}
-          sponsoredCards={rowOneSponsoredCards}
+          sponsoredCards={mappedRowOneSponsoredCards}
           faqTitle="Planning Questions"
           onSelect={setSelectedArticle}
         />
@@ -58,7 +102,7 @@ export default function FuneralAdviceSection() {
             ...rowTwoArticles.slice(1),
             ...rowTwoArticlesAdditional,
           ]}
-          sponsoredCards={rowTwoSponsoredCards}
+          sponsoredCards={mappedRowTwoSponsoredCards}
           faqTitle="Aftercare Questions"
           onSelect={setSelectedArticle}
           reverse

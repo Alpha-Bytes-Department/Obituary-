@@ -14,6 +14,34 @@ export interface MemorialSubmission {
   paymentMethod: "stripe" | "token" | "admin_override";
   createdAt: string;
   updatedAt: string;
+  submittedAt?: string;
+
+  name: string;
+  location: string;
+  country: string;
+  memorialDetails: string;
+  familyDetails: string;
+  lifeStory: string;
+  rememberForEverQuote: string;
+  favouriteQuote: string;
+  careerSummery: string;
+  relationToDeceased: string;
+  funeralNotice?: any;
+
+  // Raw data for admin editing
+  funeralHomeLogo?: string;
+  deadPersonPhoto?: string[];
+  familyTreeDiagram?: string;
+  funeralHomeDetails?: any;
+  funeralHomeAdvertisement?: any[];
+
+  // Visibility flags
+  memorialDetailVisibilityStatus?: boolean;
+  familyDetailVisibilityStatus?: boolean;
+  lifeStoryVisibilityStatus?: boolean;
+  rememberForEverQuoteVisibilityStatus?: boolean;
+  favouriteQuoteVisibilityStatus?: boolean;
+  careerSummeryVisibilityStatus?: boolean;
 }
 
 export interface SubmissionDraft {
@@ -26,6 +54,38 @@ export interface SubmissionDraft {
   biography: string;
   status: ObituaryStatus;
   paymentMethod: "stripe" | "token" | "admin_override";
+
+  name: string;
+  location: string;
+  country: string;
+  memorialDetails: string;
+  familyDetails: string;
+  lifeStory: string;
+  rememberForEverQuote: string;
+  favouriteQuote: string;
+  careerSummery: string;
+  relationToDeceased: string;
+  funeralNotice?: any;
+
+  // Images (kept URLs + new File blobs)
+  funeralHomeLogo?: string;
+  newFuneralHomeLogo?: File | null;
+  deadPersonPhoto?: string[];
+  newDeadPersonPhotos?: File[];
+  familyTreeDiagram?: string;
+  newFamilyTreeDiagram?: File | null;
+
+  // Funeral home details
+  funeralHomeDetails?: any;
+  funeralHomeAdvertisement?: any[];
+
+  // Visibility flags
+  memorialDetailVisibilityStatus?: boolean;
+  familyDetailVisibilityStatus?: boolean;
+  lifeStoryVisibilityStatus?: boolean;
+  rememberForEverQuoteVisibilityStatus?: boolean;
+  favouriteQuoteVisibilityStatus?: boolean;
+  careerSummeryVisibilityStatus?: boolean;
 }
 
 export interface DashboardUser {

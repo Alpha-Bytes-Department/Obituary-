@@ -22,16 +22,18 @@ export default function ObituaryCard({
   item,
   variant = "default",
 }: ObituaryCardProps) {
-  const heroImage = item.images[0] ?? "/placeholders/home-hero.svg";
-  const formatCalendarDate = (date: string) =>
-    new Intl.DateTimeFormat("en-US", {
+  const heroImage = item.images?.[0] ?? "/placeholders/home-hero.svg";
+  const formatCalendarDate = (date?: string) => {
+    if (!date) return "Unknown";
+    const parsed = new Date(date);
+    if (isNaN(parsed.getTime())) return "Unknown";
+    return new Intl.DateTimeFormat("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",
-    }).format(new Date(date));
-  const birthDate = item.dateOfBirth
-    ? formatCalendarDate(item.dateOfBirth)
-    : "Unknown";
+    }).format(parsed);
+  };
+  const birthDate = formatCalendarDate(item.dateOfBirth);
   const deathDate = formatCalendarDate(item.dateOfDeath);
   const locationLabel = [
     item.location.city,

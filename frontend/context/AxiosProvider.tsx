@@ -27,11 +27,14 @@ export function AxiosProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  useEffect(() => {
+  const useIsomorphicLayoutEffect = typeof window !== "undefined" ? require("react").useLayoutEffect : useEffect;
+
+  useIsomorphicLayoutEffect(() => {
     const requestInterceptor = api.interceptors.request.use((config) => {
-      if (!config._retry) {
+      if (!(config as any)._retry) {
+        // Fallback to accessToken from context if localStorage fails
         const token = typeof window !== "undefined" 
-          ? localStorage.getItem("obituary.accessToken") 
+          ? (localStorage.getItem("obituary.accessToken") || accessToken)
           : accessToken;
           
         if (token) {
@@ -49,8 +52,8 @@ export function AxiosProvider({ children }: { children: ReactNode }) {
       async (error) => {
         const originalRequest = error.config;
         
-        if (error?.response?.status === 401 && !originalRequest._retry) {
-          originalRequest._retry = true;
+        if (error?.response?.status === 401 && !(originalRequest as any)._retry) {
+          (originalRequest as any)._retry = true;
           try {
             const refreshResponse = await api.post("/auth/refresh", {
               refreshToken,

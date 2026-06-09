@@ -63,7 +63,7 @@ export default function MemorialSubmissionsTable({
                             {submission.deceasedLastName}
                           </p>
                           {submission.status === "rejected" &&
-                          submission.rejectionReason ? (
+                            submission.rejectionReason ? (
                             <p className="mt-1 text-sm text-[#b32424]">
                               {submission.rejectionReason}
                             </p>
@@ -73,7 +73,7 @@ export default function MemorialSubmissionsTable({
                     </div>
                   </td>
                   <td className="px-5 py-4 text-sm text-[#6e675f]">
-                    <p>{formatDate(submission.createdAt)}</p>
+                    <p>{formatDate(submission.submittedAt)}</p>
                   </td>
                   <td className="px-5 py-4 text-sm text-[#6e675f]">
                     <span

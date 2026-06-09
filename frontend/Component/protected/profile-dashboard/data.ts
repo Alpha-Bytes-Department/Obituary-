@@ -74,12 +74,16 @@ export const initialSubmissions: MemorialSubmission[] = [
  * @param {string} value - ISO date string.
  * @returns {string} The localized date label.
  */
-export function formatDate(value: string) {
+export function formatDate(value?: string | null) {
+  if (!value) return "N/A";
+  const date = new Date(value);
+  if (isNaN(date.getTime())) return "N/A";
+  
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
-  }).format(new Date(value));
+  }).format(date);
 }
 
 /**
@@ -128,5 +132,37 @@ export function buildDraft(submission: MemorialSubmission): SubmissionDraft {
     biography: submission.biography,
     status: submission.status,
     paymentMethod: submission.paymentMethod,
+    name: submission.name || "",
+    location: submission.location || "",
+    country: submission.country || "",
+    memorialDetails: submission.memorialDetails || "",
+    familyDetails: submission.familyDetails || "",
+    lifeStory: submission.lifeStory || "",
+    rememberForEverQuote: submission.rememberForEverQuote || "",
+    favouriteQuote: submission.favouriteQuote || "",
+    careerSummery: submission.careerSummery || "",
+    relationToDeceased: submission.relationToDeceased || "",
+    funeralNotice: submission.funeralNotice || {},
+
+    // Images
+    funeralHomeLogo: submission.funeralHomeLogo || "",
+    newFuneralHomeLogo: null,
+    deadPersonPhoto: submission.deadPersonPhoto || [],
+    newDeadPersonPhotos: [],
+    familyTreeDiagram: submission.familyTreeDiagram || "",
+    newFamilyTreeDiagram: null,
+
+    // Nested
+    funeralHomeDetails: submission.funeralHomeDetails || {},
+    funeralHomeAdvertisement: submission.funeralHomeAdvertisement || [],
+
+    // Visibility flags
+    memorialDetailVisibilityStatus: submission.memorialDetailVisibilityStatus ?? true,
+    familyDetailVisibilityStatus: submission.familyDetailVisibilityStatus ?? true,
+    lifeStoryVisibilityStatus: submission.lifeStoryVisibilityStatus ?? true,
+    rememberForEverQuoteVisibilityStatus: submission.rememberForEverQuoteVisibilityStatus ?? true,
+    favouriteQuoteVisibilityStatus: submission.favouriteQuoteVisibilityStatus ?? true,
+    careerSummeryVisibilityStatus: submission.careerSummeryVisibilityStatus ?? true,
   };
 }
+

@@ -8,7 +8,7 @@ const jwt = require("jsonwebtoken");
  */
 exports.createAccessToken = (payload) => {
   return jwt.sign(payload, process.env.JWT_SECRET || "dev_secret", {
-    expiresIn: "65m",
+    expiresIn: "55m",
   });
 };
 
@@ -32,11 +32,7 @@ exports.verifyToken = (token, secret) => {
   return jwt.verify(token, secret);
 };
 
-/**
- * Create a six digit OTP code.
- *
- * @returns {string}
- */
+
 exports.createOtpCode = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };

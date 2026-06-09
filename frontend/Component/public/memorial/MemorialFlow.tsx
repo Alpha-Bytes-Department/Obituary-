@@ -23,7 +23,7 @@ import {
 } from "../../../components/ui/dialog";
 import { Button } from "../../../components/ui/button";
 
-type StepId = 1 | 2 | 3 | 4 | 5;
+type StepId = 1 | 2 | 3 | 4;
 
 type AdvertisementDraft = {
   id: string;
@@ -54,6 +54,7 @@ type FuneralNotice = {
 type SubmissionFlow = {
   personalDetails: {
     fullName: string;
+    birthdate: string;
     dateOfDeath: string;
     location: string;
     obituary: string;
@@ -75,11 +76,6 @@ type SubmissionFlow = {
     advertisements: AdvertisementDraft[];
   };
   familyTreeDiagram: string[];
-  payment: {
-    packageName: string;
-    promoCode: string;
-    termsAccepted: boolean;
-  };
   funeralNotice: FuneralNotice;
 };
 
@@ -113,6 +109,7 @@ const createFuneralNotice = (): FuneralNotice => ({
 const initialFlow: SubmissionFlow = {
   personalDetails: {
     fullName: "",
+    birthdate: "",
     dateOfDeath: "",
     location: "",
     familyDetails: "",
@@ -134,16 +131,11 @@ const initialFlow: SubmissionFlow = {
     advertisements: [createAdvertisement("ad-1")],
   },
   familyTreeDiagram: [],
-  payment: {
-    packageName: "Memorial Package",
-    promoCode: "",
-    termsAccepted: true,
-  },
   funeralNotice: createFuneralNotice(),
 };
 
 const isStepId = (value: unknown): value is StepId =>
-  value === 1 || value === 2 || value === 3 || value === 4 || value === 5;
+  value === 1 || value === 2 || value === 3 || value === 4;
 
 const normalizeStringArray = (value: unknown): string[] =>
   Array.isArray(value)
@@ -167,7 +159,6 @@ const normalizeFlow = (value: unknown): SubmissionFlow => {
       funeralHomeDetails?: Partial<FuneralHomeDetails>;
       advertisements?: Array<Partial<AdvertisementDraft>>;
     };
-    payment?: Partial<SubmissionFlow["payment"]>;
   };
 
   const rawOthers = (raw.others ?? {}) as {
@@ -209,6 +200,10 @@ const normalizeFlow = (value: unknown): SubmissionFlow => {
       fullName:
         typeof raw.personalDetails?.fullName === "string"
           ? raw.personalDetails.fullName
+          : "",
+      birthdate:
+        typeof raw.personalDetails?.birthdate === "string"
+          ? raw.personalDetails.birthdate
           : "",
       dateOfDeath:
         typeof raw.personalDetails?.dateOfDeath === "string"
@@ -319,18 +314,6 @@ const normalizeFlow = (value: unknown): SubmissionFlow => {
             : "",
       },
     },
-    payment: {
-      packageName:
-        typeof raw.payment?.packageName === "string"
-          ? raw.payment.packageName
-          : "Memorial Package",
-      promoCode:
-        typeof raw.payment?.promoCode === "string" ? raw.payment.promoCode : "",
-      termsAccepted:
-        typeof raw.payment?.termsAccepted === "boolean"
-          ? raw.payment.termsAccepted
-          : true,
-    },
   };
 };
 
@@ -340,9 +323,24 @@ const readDraftState = (): DraftState => {
   }
 
   const storedValue = window.localStorage.getItem(DRAFT_STORAGE_KEY);
+  let persistentFh = null;
+  try {
+    const pfh = window.localStorage.getItem("persistent-fh-details");
+    if (pfh) persistentFh = JSON.parse(pfh);
+  } catch {}
+
+  const getFlowWithFh = (baseFlow: SubmissionFlow) => {
+    if (persistentFh) {
+      baseFlow.others.funeralHomeDetails = {
+        ...baseFlow.others.funeralHomeDetails,
+        ...persistentFh,
+      };
+    }
+    return baseFlow;
+  };
 
   if (!storedValue) {
-    return { currentStep: 1, flow: initialFlow };
+    return { currentStep: 1, flow: getFlowWithFh({ ...initialFlow }) };
   }
 
   try {
@@ -359,7 +357,7 @@ const readDraftState = (): DraftState => {
 
     return { currentStep: 1, flow: normalizeFlow(parsed) };
   } catch {
-    return { currentStep: 1, flow: initialFlow };
+    return { currentStep: 1, flow: getFlowWithFh({ ...initialFlow }) };
   }
 };
 
@@ -484,6 +482,12 @@ export default function MemorialFlow() {
         DRAFT_STORAGE_KEY,
         JSON.stringify({ currentStep, flow }),
       );
+      if (flow.others.funeralHomeDetails.name || flow.others.funeralHomeDetails.phone) {
+        window.localStorage.setItem(
+          "persistent-fh-details",
+          JSON.stringify(flow.others.funeralHomeDetails)
+        );
+      }
     } catch {
       // Draft storage is best-effort only.
     }
@@ -492,47 +496,80 @@ export default function MemorialFlow() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (currentStep < 5) {
-      setCurrentStep((step) => (step === 5 ? 5 : ((step + 1) as StepId)));
+    if (currentStep < 4) {
+      setCurrentStep((step) => (step === 4 ? 4 : ((step + 1) as StepId)));
       return;
     }
 
     setIsSubmitting(true);
     try {
       const formData = new FormData();
-      formData.append("name", flow.personalDetails.fullName);
-      formData.append("deathDate", flow.personalDetails.dateOfDeath);
-      formData.append("location", flow.personalDetails.location);
-      formData.append("memorialDetails", flow.personalDetails.obituary);
-      formData.append("familyDetails", flow.personalDetails.familyDetails);
-      formData.append("lifeStory", flow.obituaryContent.lifeStory);
-      formData.append("rememberForEverQuote", flow.obituaryContent.livesRememberedForever);
-      formData.append("favouriteQuote", flow.obituaryContent.favoriteQuote);
-      formData.append("careerSummery", flow.obituaryContent.careerSummary);
-      formData.append("relationToDeceased", flow.others.relationshipToDeceased);
+      formData.append("name", flow.personalDetails.fullName || "Unknown Name");
+      formData.append("birthdate", flow.personalDetails.birthdate || new Date().toISOString());
+      formData.append("deathDate", flow.personalDetails.dateOfDeath || new Date().toISOString());
+      formData.append("location", flow.personalDetails.location || "Unknown Location");
+      formData.append("memorialDetails", flow.personalDetails.obituary || "N/A");
+      formData.append("familyDetails", flow.personalDetails.familyDetails || "N/A");
+      formData.append("lifeStory", flow.obituaryContent.lifeStory || "N/A");
+      formData.append("rememberForEverQuote", flow.obituaryContent.livesRememberedForever || "N/A");
+      formData.append("favouriteQuote", flow.obituaryContent.favoriteQuote || "N/A");
+      formData.append("careerSummery", flow.obituaryContent.careerSummary || "N/A");
+      formData.append("relationToDeceased", flow.others.relationshipToDeceased || "N/A");
       
-      formData.append("funeralHomeDetails", JSON.stringify(flow.others.funeralHomeDetails));
-      formData.append("funeralNotice", JSON.stringify(flow.funeralNotice));
+      const mappedFuneralHomeDetails = {
+        name: flow.others.funeralHomeDetails.name || "N/A",
+        website: flow.others.funeralHomeDetails.websiteLink || "",
+        phone: flow.others.funeralHomeDetails.phone || "N/A",
+        email: flow.others.funeralHomeDetails.mail || "noemail@example.com",
+        address: flow.others.funeralHomeDetails.location || "N/A",
+        mapLink: flow.others.funeralHomeDetails.mapLink || "N/A",
+      };
+
+      const mappedFuneralNotice = {
+        serviceDate: new Date().toISOString(),
+        serviceLocation: flow.funeralNotice.service.location || "N/A",
+        serviceName: flow.funeralNotice.service.name || "N/A",
+        serviceMapLink: flow.funeralNotice.service.mapLink || "N/A",
+        ReceptionDate: new Date().toISOString(),
+        ReceptionLocation: flow.funeralNotice.reception.location || "N/A",
+        ReceptionName: flow.funeralNotice.reception.name || "N/A",
+        ReceptionMapLink: flow.funeralNotice.reception.mapLink || "N/A",
+      };
+
+      formData.append("funeralHomeDetails", JSON.stringify(mappedFuneralHomeDetails));
+      formData.append("funeralNotice", JSON.stringify(mappedFuneralNotice));
       
       // Ads
-      const adsData = flow.others.advertisements.map(ad => ({ link: ad.postLink }));
+      const adsData = flow.others.advertisements.map(ad => ({ link: ad.postLink || "#" }));
       formData.append("funeralHomeAdvertisement", JSON.stringify(adsData));
       
       flow.others.advertisements.forEach((ad, i) => {
-        if (ad.image[0]) {
+        if (ad.image[0] instanceof File) {
           formData.append(`adImage_${i}`, ad.image[0]);
         }
       });
 
       // Photos
       flow.mediaUpload.celebrationPhotos.forEach((file) => {
-        formData.append("deadPersonPhoto", file);
+        if (file instanceof File) {
+           formData.append("deadPersonPhoto", file);
+        }
       });
 
+      // Funeral Home Logo
+      if (flow.mediaUpload.funeralHomeLogo[0] instanceof File) {
+         formData.append("funeralHomeLogo", flow.mediaUpload.funeralHomeLogo[0]);
+      } else if (user?.funeralHome?.logo) {
+         formData.append("existingFuneralHomeLogo", user.funeralHome.logo);
+      } else {
+         formData.append("existingFuneralHomeLogo", "https://res.cloudinary.com/dhyq4r3nm/image/upload/v1741544464/obituary/memorials/logos/n0yvym7tffcuzry9x46w.png");
+      }
+
       // Family Tree Diagram
-      if (flow.familyTreeDiagram[0] && typeof flow.familyTreeDiagram[0] !== 'string') {
-         // If it's a file object, assuming FileDropZone returns File[]
-         formData.append("familyTreeDiagram", flow.familyTreeDiagram[0] as any);
+      if (flow.familyTreeDiagram[0] instanceof File) {
+         formData.append("familyTreeDiagram", flow.familyTreeDiagram[0]);
+      } else {
+         formData.append("existingFamilyTreeDiagram", "https://res.cloudinary.com/dhyq4r3nm/image/upload/v1741544464/obituary/memorials/logos/n0yvym7tffcuzry9x46w.png");
       }
 
       await api.post("/memorials", formData, {
@@ -553,13 +590,7 @@ export default function MemorialFlow() {
     setCurrentStep((step) => (step === 1 ? 1 : ((step - 1) as StepId)));
   };
 
-  const canSubmit = flow.payment.termsAccepted;
-  const promoCode = flow.payment.promoCode.trim().toUpperCase();
-  const basePrice = 99;
-  
-  const hasApprovedToken = Boolean(user?.tokenApproveStatus);
-  const discountAmount = hasApprovedToken ? basePrice : (promoCode === "XYZ123" ? basePrice : 0);
-  const totalDue = Math.max(basePrice - discountAmount, 0);
+  const canSubmit = true;
 
   if (isSuccess) {
     return <SuccessScreen payload={flow} />;
@@ -656,7 +687,23 @@ export default function MemorialFlow() {
                   />
                 </div>
 
-                <div className="grid gap-5">
+                <div className="grid gap-5 md:grid-cols-2">
+                  <div>
+                    <Label>Date of Birth</Label>
+                    <TextInput
+                      type="date"
+                      value={flow.personalDetails.birthdate}
+                      onChange={(value) =>
+                        setFlow((current) => ({
+                          ...current,
+                          personalDetails: {
+                            ...current.personalDetails,
+                            birthdate: value,
+                          },
+                        }))
+                      }
+                    />
+                  </div>
                   <div>
                     <Label>Date of Death *</Label>
                     <TextInput
@@ -822,6 +869,7 @@ export default function MemorialFlow() {
                   files={flow.mediaUpload.funeralHomeLogo}
                   maxFiles={1}
                   multiple={false}
+                  defaultImageUrl={user?.funeralHome?.logoImageUrl}
                   onFiles={(files) =>
                     setFlow((current) => ({
                       ...current,
@@ -1181,180 +1229,14 @@ export default function MemorialFlow() {
             </SectionCard>
           ) : null}
 
-          {currentStep === 5 ? (
-            <SectionCard title="Payment">
-              <div className="flex flex-col gap-6 ">
-                <div className="flex-1 space-y-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-sm font-medium text-slate-500">
-                        Memorial Package
-                      </p>
-                      <h3 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">
-                        Secure memorial checkout
-                      </h3>
-                      <p className="mt-2 text-sm leading-6 text-slate-600">
-                        {hasApprovedToken 
-                          ? "You have an approved token. Your memorial submission is completely free."
-                          : "Apply a promo code before submitting. XYZ123 makes the demo checkout completely free."}
-                      </p>
-                    </div>
-                    <span className="rounded-full bg-[#eef4ff] px-3 py-1 text-xs font-semibold text-[#274877]">
-                      Draft saved automatically
-                    </span>
-                  </div>
 
-                  <div className="rounded-2xl border border-[#eadfc6] bg-[#fbf8f1] p-4">
-                    <div className="flex items-center justify-between gap-3 border-b border-[#eadfc6] pb-3">
-                      <span className="text-sm text-slate-500">Package</span>
-                      <span className="text-sm font-medium text-slate-900">
-                        {flow.payment.packageName}
-                      </span>
-                    </div>
-                    <div className="space-y-3 py-4 text-sm text-slate-600">
-                      <div className="flex items-center justify-between">
-                        <span>Base price</span>
-                        <span className="font-medium text-slate-900">
-                          ${basePrice.toFixed(2)}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span>Promo discount</span>
-                        <span className="font-medium text-emerald-700">
-                          -${discountAmount.toFixed(2)}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between border-t border-[#eadfc6] pt-3 text-base font-semibold text-slate-950">
-                        <span>Total due</span>
-                        <span>${totalDue.toFixed(2)}</span>
-                      </div>
-                    </div>
-                  </div>
 
-                  {!hasApprovedToken && (
-                    <div>
-                      <Label>Promo Code</Label>
-                      <TextInput
-                        value={flow.payment.promoCode}
-                        onChange={(value) =>
-                          setFlow((current) => ({
-                            ...current,
-                            payment: {
-                              ...current.payment,
-                              promoCode: value,
-                            },
-                          }))
-                        }
-                        placeholder="Enter promo code"
-                      />
-                      <p
-                        className={`mt-2 text-xs ${
-                          promoCode === "XYZ123"
-                            ? "text-emerald-700"
-                            : promoCode
-                              ? "text-amber-700"
-                              : "text-slate-400"
-                        }`}
-                      >
-                        {promoCode === "XYZ123"
-                          ? "XYZ123 applied. Your demo total is free."
-                          : promoCode
-                            ? "Promo code does not match the free test code."
-                            : "Use XYZ123 for a 100% free demo checkout."}
-                      </p>
-                    </div>
-                  )}
-
-                  <label className="mt-4 flex items-start gap-3 text-sm text-slate-600">
-                    <input
-                      type="checkbox"
-                      checked={flow.payment.termsAccepted}
-                      onChange={(event) =>
-                        setFlow((current) => ({
-                          ...current,
-                          payment: {
-                            ...current.payment,
-                            termsAccepted: event.target.checked,
-                          },
-                        }))
-                      }
-                      className="mt-1 h-4 w-4 rounded border-slate-300 text-[#274877] focus:ring-[#274877]"
-                    />
-                    <span>
-                      I agree to the Terms of Service and understand that my
-                      submission will be reviewed before publication.
-                    </span>
-                  </label>
-                </div>
-
-                <div className="w-full rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-                    Checkout summary
-                  </p>
-                  <div className="mt-4 space-y-4 text-sm text-slate-600">
-                    <div className="flex items-center justify-between">
-                      <span>Advertisement cards</span>
-                      <span className="font-medium text-slate-950">
-                        {flow.others.advertisements.length}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>Family members</span>
-                      <span className="font-medium text-slate-950">
-                        {flow.familyTree.length}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>Funeral home name</span>
-                      <span className="max-w-44 truncate font-medium text-slate-950">
-                        {flow.others.funeralHomeDetails.name || "Not added yet"}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 rounded-2xl bg-[#274877] px-4 py-4 text-white">
-                    <p className="text-sm text-white/80">Amount due today</p>
-                    <p className="mt-1 text-3xl font-semibold">
-                      ${totalDue.toFixed(2)}
-                    </p>
-                    <p className="mt-2 text-sm text-white/70">
-                      {hasApprovedToken
-                        ? "Free submission via approved token."
-                        : promoCode === "XYZ123"
-                          ? "100% discount applied for testing."
-                          : "Apply a promo code before submitting."}
-                    </p>
-                  </div>
-
-                  <div className="mt-6 border-t border-slate-200 pt-6">
-                    <div className="flex flex-col gap-3 sm:flex-row">
-                      <button
-                        type="button"
-                        onClick={handlePrevious}
-                        className="rounded-lg border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                      >
-                        Previous
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={!canSubmit}
-                        className="flex-1 rounded-lg bg-[#274877] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#1f3a60] disabled:cursor-not-allowed disabled:bg-slate-300"
-                      >
-                        Submit for Review
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </SectionCard>
-          ) : null}
-
-          {currentStep < 5 ? (
+          {currentStep <= 4 ? (
             <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-transparent px-1">
               <button
                 type="button"
                 onClick={handlePrevious}
-                disabled={currentStep === 1}
+                disabled={currentStep === 1 || isSubmitting}
                 className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -1362,10 +1244,11 @@ export default function MemorialFlow() {
               </button>
               <button
                 type="submit"
-                className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-[#274877] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#1f3a60]"
+                disabled={isSubmitting}
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-[#274877] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#1f3a60] disabled:opacity-50"
               >
-                Continue
-                <ChevronRight className="h-4 w-4" />
+                {currentStep === 4 ? (isSubmitting ? "Submitting..." : "Submit for Review") : "Continue"}
+                {currentStep < 4 && <ChevronRight className="h-4 w-4" />}
               </button>
             </div>
           ) : null}

@@ -26,13 +26,13 @@ export default function HeroSearch() {
       nextParams.delete("q");
     }
 
-    const nextUrl = nextParams.toString() ? `/?${nextParams.toString()}` : "/";
+    const nextUrl = nextParams.toString() ? `/obituary?${nextParams.toString()}` : "/obituary";
     const currentUrl = searchParams.toString()
-      ? `/?${searchParams.toString()}`
-      : "/";
+      ? `/obituary?${searchParams.toString()}`
+      : "/obituary";
 
     if (nextUrl !== currentUrl) {
-      router.replace(nextUrl);
+      router.push(nextUrl);
     }
   }, [debouncedQuery, router, searchParams]);
 

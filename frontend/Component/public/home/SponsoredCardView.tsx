@@ -15,7 +15,7 @@ import { SponsoredCard } from "./types";
  * - `card`: the `SponsoredCard` data to render
  */
 export default function SponsoredCardView({ card }: { card: SponsoredCard }) {
-  return (
+  const content = (
     <article className="h-full relative overflow-hidden rounded-md border shadow-[0_14px_32px_rgba(15,23,42,0.09)] transition duration-500">
       <Image
         src={card.image}
@@ -33,5 +33,13 @@ export default function SponsoredCardView({ card }: { card: SponsoredCard }) {
         </p>
       </div>
     </article>
+  );
+
+  return card.link ? (
+    <a href={card.link} target="_blank" rel="noreferrer" className="block h-full cursor-pointer">
+      {content}
+    </a>
+  ) : (
+    <div className="h-full">{content}</div>
   );
 }

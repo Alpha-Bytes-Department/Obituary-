@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { toast } from "sonner";
 
 import CouponStatusCard from "./profile-dashboard/CouponStatusCard";
@@ -16,6 +16,7 @@ import type {
   SubmissionDraft,
 } from "./profile-dashboard/types";
 import useAuth from "../../hooks/useAuth";
+import { useAxios } from "../../context/AxiosProvider";
 
 /**
  * Renders the protected profile dashboard.
@@ -25,12 +26,53 @@ import useAuth from "../../hooks/useAuth";
 export default function ProfileContainer() {
   const { user } = useAuth();
   const displayUser = user ?? fallbackUser;
-  const [submissions, setSubmissions] = useState(initialSubmissions);
+  const api = useAxios();
+  const [submissions, setSubmissions] = useState<MemorialSubmission[]>([]);
   const [selectedSubmission, setSelectedSubmission] =
     useState<MemorialSubmission | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<MemorialSubmission | null>(
     null,
   );
+
+  useEffect(() => {
+    const fetchMemorials = async () => {
+      try {
+        const res = await api.get("/memorials/user");
+        const mapped = res.data.memorials.map((m: any) => ({
+          id: m._id,
+          obituaryId: m._id,
+          memorialImage: m.deadPersonPhoto?.[0] || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=900&q=80",
+          deceasedFirstName: m.name ? m.name.split(" ")[0] : "",
+          deceasedLastName: m.name ? m.name.split(" ").slice(1).join(" ") : "",
+          rejectionReason: m.rejectionReason || "",
+          dateOfBirth: m.birthdate || "",
+          dateOfDeath: m.deathDate || "",
+          biography: m.memorialDetails || "",
+          status: m.status || "approved",
+          paymentMethod: m.paymentMethod || "stripe",
+          createdAt: m.createdAt,
+          updatedAt: m.updatedAt,
+          submittedAt: m.submittedAt || m.createdAt || m.updatedAt || new Date().toISOString(),
+          
+          name: m.name || "",
+          location: m.location || "",
+          country: m.country || "",
+          memorialDetails: m.memorialDetails || "",
+          familyDetails: m.familyDetails || "",
+          lifeStory: m.lifeStory || "",
+          rememberForEverQuote: m.rememberForEverQuote || "",
+          favouriteQuote: m.favouriteQuote || "",
+          careerSummery: m.careerSummery || "",
+          relationToDeceased: m.relationToDeceased || "",
+          funeralNotice: m.funeralNotice,
+        }));
+        setSubmissions(mapped);
+      } catch (err) {
+        toast.error("Failed to fetch memorials");
+      }
+    };
+    fetchMemorials();
+  }, [api]);
 
   const stats = useMemo(
     () => ({
@@ -73,33 +115,43 @@ export default function ProfileContainer() {
    * @param {SubmissionDraft} draft - The updated form data.
    * @returns {void}
    */
-  const saveDraft = (draft: SubmissionDraft) => {
+  const saveDraft = async (draft: SubmissionDraft) => {
     if (!selectedSubmission) {
       return;
     }
 
-    setSubmissions((current) =>
-      current.map((submission) =>
-        submission.id === selectedSubmission.id
-          ? {
-              ...submission,
-              memorialImage: draft.memorialImage,
-              deceasedFirstName: draft.deceasedFirstName,
-              deceasedLastName: draft.deceasedLastName,
-              rejectionReason: draft.rejectionReason,
-              dateOfBirth: draft.dateOfBirth,
-              dateOfDeath: draft.dateOfDeath,
-              biography: draft.biography,
-              status: draft.status,
-              paymentMethod: draft.paymentMethod,
-              updatedAt: new Date().toISOString(),
-            }
-          : submission,
-      ),
-    );
+    try {
+      const formData = new FormData();
+      Object.keys(draft).forEach(key => {
+        if (["deceasedFirstName", "deceasedLastName", "biography", "memorialImage"].includes(key)) return;
+        formData.append(key, (draft as any)[key]);
+      });
 
-    toast.success("Memorial submission updated successfully.");
-    closeEditor();
+      await api.put(`/memorials/${selectedSubmission.id}`, formData, {
+         headers: { "Content-Type": "multipart/form-data" }
+      });
+      
+      setSubmissions((current) =>
+        current.map((submission) =>
+          submission.id === selectedSubmission.id
+            ? {
+                ...submission,
+                ...draft,
+                deceasedFirstName: draft.name ? draft.name.split(" ")[0] : "",
+                deceasedLastName: draft.name ? draft.name.split(" ").slice(1).join(" ") : "",
+                biography: draft.memorialDetails,
+                updatedAt: new Date().toISOString(),
+              }
+            : submission,
+        ),
+      );
+
+      toast.success("Memorial submission updated successfully.");
+      closeEditor();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to update memorial");
+    }
   };
 
   /**
@@ -117,16 +169,21 @@ export default function ProfileContainer() {
    *
    * @returns {void}
    */
-  const confirmDeleteSubmission = () => {
+  const confirmDeleteSubmission = async () => {
     if (!deleteTarget) {
       return;
     }
 
-    setSubmissions((current) =>
-      current.filter((submission) => submission.id !== deleteTarget.id),
-    );
-    setDeleteTarget(null);
-    toast.message("Memorial submission deleted.");
+    try {
+      await api.delete(`/memorials/${deleteTarget.id}`);
+      setSubmissions((current) =>
+        current.filter((submission) => submission.id !== deleteTarget.id),
+      );
+      setDeleteTarget(null);
+      toast.success("Memorial submission deleted.");
+    } catch (err) {
+      toast.error("Failed to delete memorial");
+    }
   };
 
   return (

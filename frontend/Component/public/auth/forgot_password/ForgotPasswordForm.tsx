@@ -4,6 +4,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
+import { useAxios } from "../../../../context/AxiosProvider";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+
 const forgotPasswordSchema = z.object({
   email: z.string().email("Enter a valid email address."),
 });
@@ -16,6 +20,8 @@ type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
  * @returns {JSX.Element} The forgot password form.
  */
 export default function ForgotPasswordForm() {
+  const api = useAxios();
+  const router = useRouter();
   const {
     register,
     handleSubmit,
@@ -25,8 +31,15 @@ export default function ForgotPasswordForm() {
     defaultValues: { email: "" },
   });
 
-  const onSubmit = handleSubmit(async () => {
-    window.alert("Reset link (mock)");
+  const onSubmit = handleSubmit(async (data) => {
+    try {
+      const response = await api.post("/auth/forgot-password", {
+        email: data.email,
+      });
+      toast.success(response.data.message || "Reset link sent to your email!");
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to send reset link");
+    }
   });
 
   return (

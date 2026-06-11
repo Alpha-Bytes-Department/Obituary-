@@ -497,6 +497,19 @@ export default function MemorialFlow() {
     event.preventDefault();
 
     if (currentStep < 4) {
+      if (currentStep === 1) {
+        if (flow.personalDetails.birthdate && flow.personalDetails.dateOfDeath) {
+          const bd = new Date(flow.personalDetails.birthdate);
+          const dd = new Date(flow.personalDetails.dateOfDeath);
+          if (bd >= dd) {
+            toast.error("Birth date cannot be the same as or newer than death date.");
+            return;
+          }
+        } else {
+          toast.error("Please provide both birth date and date of death.");
+          return;
+        }
+      }
       setCurrentStep((step) => (step === 4 ? 4 : ((step + 1) as StepId)));
       return;
     }
@@ -572,9 +585,7 @@ export default function MemorialFlow() {
          formData.append("existingFamilyTreeDiagram", "https://res.cloudinary.com/dhyq4r3nm/image/upload/v1741544464/obituary/memorials/logos/n0yvym7tffcuzry9x46w.png");
       }
 
-      await api.post("/memorials", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      await api.post("/memorials", formData);
 
       toast.success("Memorial submitted successfully!");
       setIsSuccess(true);

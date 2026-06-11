@@ -19,7 +19,7 @@ const UserSchema = new mongoose.Schema(
     },
     tokenApplied: { type: Boolean, default: false },
     tokenApproveStatus: { type: Boolean, default: false },
-    token: { type: String , unique:true, default:null },
+    token: { type: String , unique:true, sparse: true },
   },
   { timestamps: true },
 );

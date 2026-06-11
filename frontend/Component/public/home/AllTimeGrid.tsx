@@ -12,9 +12,18 @@ import ResponsiveCarousel from "./ResponsiveCarousel";
  * @returns {JSX.Element} The memorable grid.
  */
 export default function AllTimeGrid({ items }: { items: ObituaryMock[] }) {
+  // console.log("Rendering AllTimeGrid with items:", items);
   return (
     <div className="p-4 lg:p-5">
-      <ResponsiveCarousel items={items} variant="memorable" />
+     {items.length > 0 ? (
+        <ResponsiveCarousel items={items} variant="memorable" />
+      ) : (
+        <div className="flex h-full items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-6">
+          <p className="text-center text-lg font-medium text-gray-500">
+            No memorable obituaries available.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

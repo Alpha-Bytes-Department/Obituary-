@@ -138,6 +138,23 @@ function matchesCountryFilters(
     return false;
   });
 }
+function normalizeAdLink(link?: string | null) {
+  if (!link) return null;
+
+  const trimmedLink = link.trim();
+
+  if (!trimmedLink) return null;
+
+  const isInternalLink = trimmedLink.startsWith("/");
+  const hasProtocol =
+    trimmedLink.startsWith("http://") || trimmedLink.startsWith("https://");
+
+  if (isInternalLink || hasProtocol) {
+    return trimmedLink;
+  }
+
+  return `https://${trimmedLink}`;
+}
 
 /**
  * Renders the obituary listing page.
@@ -149,19 +166,20 @@ export default function ObituaryListContainer() {
   const api = useAxios();
   const [obituaries, setObituaries] = useState<ObituaryMock[]>([]);
   const [ad, setAd] = useState<any>(null);
+  const normalizedLink = normalizeAdLink(ad?.adLinkUrl);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [memRes, adRes] = await Promise.all([
           api.get("/memorials"),
-          api.get("/ads")
+          api.get("/ads"),
         ]);
         const mapped: ObituaryMock[] = memRes.data.memorials.map((m: any) => {
           const nameParts = m.name ? m.name.split(" ") : [];
           const deceasedFirstName = nameParts[0] || "";
           const deceasedLastName = nameParts.slice(1).join(" ") || "";
-          
+
           const locParts = m.location ? m.location.split(",") : [];
           const city = locParts[0]?.trim() || "";
           const state = locParts[1]?.trim() || "";
@@ -185,16 +203,20 @@ export default function ObituaryListContainer() {
             location: { city, state, country },
             age,
             memorialQuote: m.favouriteQuote || m.rememberForEverQuote || "",
-            images: m.deadPersonPhoto && m.deadPersonPhoto.length > 0 ? m.deadPersonPhoto : ["/Source/Placeholder_Person.png"],
+            images:
+              m.deadPersonPhoto && m.deadPersonPhoto.length > 0
+                ? m.deadPersonPhoto
+                : ["/Source/Placeholder_Person.png"],
             biography: m.memorialDetails || m.lifeStory || "",
             excerpt: m.careerSummery || m.memorialDetails || "",
           };
         });
         setObituaries(mapped);
-        
+
         // Pick an ad for the filter section
         const ads = adRes.data.ads || [];
-        setAd(ads.find((a: any) => a.placementType === 'special_row_1') || ads[0]);
+        console.log("Fetched ads:", ads);
+        setAd(ads[1] || null);
       } catch (err) {
         console.error("Failed to fetch data:", err);
       }
@@ -251,7 +273,13 @@ export default function ObituaryListContainer() {
 
       return rightAge - leftAge;
     });
-  }, [countryFiltersSelected, publishDateFiltersSelected, query, sortOption, obituaries]);
+  }, [
+    countryFiltersSelected,
+    publishDateFiltersSelected,
+    query,
+    sortOption,
+    obituaries,
+  ]);
 
   const totalPages = Math.max(
     1,
@@ -314,13 +342,25 @@ export default function ObituaryListContainer() {
               onToggle={handleToggleFilter}
             />
             {ad && (
-              <div className="mt-8 rounded-xl border border-[#e6c08a] bg-[#f3d8aa] p-4 text-center">
-                <span className="text-xs font-semibold uppercase text-slate-500 block mb-2">{ad.placementType || "Sponsored"}</span>
-                <img src={ad.adImageUrl} alt={ad.adTitle} className="w-full h-auto rounded-md mb-3" />
-                <h4 className="font-heading font-semibold text-[#132855] text-lg">{ad.adTitle}</h4>
-                <p className="text-sm text-slate-700 mb-3">{ad.adDescription}</p>
+              <div className="mt-8 rounded-xl border border-[#0755af] bg-[#132d66f3] p-4 text-center">
+                <img
+                  src={ad.adImageUrl}
+                  alt={ad.adTitle}
+                  className="w-full h-auto rounded-md mb-3"
+                />
+                <h4 className="font-heading font-semibold text-white text-lg">
+                  {ad.adTitle}
+                </h4>
+                <p className="text-sm text-slate-200 mb-3">
+                  {ad.adDescription}
+                </p>
                 {ad.adLinkUrl && (
-                  <a href={ad.adLinkUrl} className="inline-block px-4 py-2 bg-[#284c73] text-white rounded-md text-sm transition hover:bg-[#1f3b5a]">
+                  <a
+                    href={normalizedLink || "#"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block px-4 py-2 bg-[#435a72] text-white rounded-md text-sm transition hover:bg-[#1f3b5a]"
+                  >
                     Learn More
                   </a>
                 )}

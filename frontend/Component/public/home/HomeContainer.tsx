@@ -60,9 +60,9 @@ export default function HomeContainer() {
             excerpt: m.careerSummery || m.memorialDetails || "",
           };
         });
-
-        setFeaturedObituaries(mappedMemorials.slice(0, 4));
-        setAllTimeObituaries(mappedMemorials.slice(4));
+        // console.log("Mapped memorials:", mappedMemorials);
+        setFeaturedObituaries(mappedMemorials);
+        setAllTimeObituaries(mappedMemorials.slice(0, 4));
         setAds(adsRes.data.ads || []);
       } catch (error) {
         console.error("Failed to fetch home data:", error);

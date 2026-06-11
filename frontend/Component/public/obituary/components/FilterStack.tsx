@@ -39,8 +39,6 @@ export default function FilterStack({
         selectedFilters={countryFiltersSelected}
         onToggle={(filterId) => onToggle("country", filterId)}
       />
-
-      <AdvertisementCard />
     </div>
   );
 }

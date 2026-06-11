@@ -56,14 +56,14 @@ export default function SearchToolbar({
               className="w-full appearance-none rounded-[0.9rem] border border-black/8 bg-[#17365a] px-4 py-3 pr-10 text-sm font-medium text-white shadow-[0_10px_24px_rgba(15,23,42,0.08)] outline-none transition hover:bg-[#132d4c]"
               aria-label="Sort memorials"
             >
-              <option value="" className="text-slate-900">
+              <option value="" className="text-slate-50">
                 Sort by
               </option>
               {sortOptions.map((option) => (
                 <option
                   key={option.value}
                   value={option.value}
-                  className="text-slate-900"
+                  className="text-slate-50"
                 >
                   {option.label}
                 </option>

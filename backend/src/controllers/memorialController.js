@@ -261,12 +261,19 @@ exports.updateMemorial = async (req, res) => {
 // ================= Delete Memorial =================
 exports.deleteMemorial = async (req, res) => {
   try {
-    const memorial = await Memorial.findOneAndDelete({ _id: req.params.id, UserId: req.user.id });
+    const deleteQuery = { _id: req.params.id };
+
+    if (req.user.role !== "admin") {
+      deleteQuery.UserId = req.user.id;
+    }
+
+    const memorial = await Memorial.findOneAndDelete(deleteQuery);
     if (!memorial) {
       return res.status(404).json({ message: "Memorial not found" });
     }
     return res.status(200).json({ message: "Memorial deleted successfully" });
   } catch (error) {
+    console.error("Delete memorial error:", error);
     return res.status(500).json({ message: "Failed to delete memorial" });
   }
 };

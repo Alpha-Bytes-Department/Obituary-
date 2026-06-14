@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const adminController = require("../controllers/adminController");
+const memorialController = require("../controllers/memorialController");
 const { getAllDonations, deleteDonation } = require("../controllers/donationController");
 const authMiddleware = require("../middlewares/authMiddleware");
 const upload = require("../middlewares/uploadMiddleware");
@@ -33,6 +34,7 @@ router.post("/users/:id/approve-coupon", adminController.approveCoupon);
 // Memorial management
 router.get("/memorials", adminController.getAllMemorials);
 router.put("/memorials/:id", uploadFields, adminController.updateMemorial);
+router.delete("/memorials/:id", memorialController.deleteMemorial);
 
 // Donations (read-only for admin dashboard)
 router.get("/donations", getAllDonations);

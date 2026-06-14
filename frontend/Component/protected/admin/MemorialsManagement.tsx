@@ -4,14 +4,20 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useAxios } from "../../../context/AxiosProvider";
 import MemorialSubmissionsTable from "../profile-dashboard/MemorialSubmissionsTable";
+import DeleteSubmissionDialog from "../profile-dashboard/DeleteSubmissionDialog";
 import AdminEditDialog from "./AdminEditDialog";
 import type { MemorialSubmission } from "../profile-dashboard/types";
+import AdminPagination from "./AdminPagination";
+
+const PAGE_SIZE = 10;
 
 export default function MemorialsManagement() {
   const api = useAxios();
   const [submissions, setSubmissions] = useState<MemorialSubmission[]>([]);
   const [selectedSubmission, setSelectedSubmission] = useState<MemorialSubmission | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<MemorialSubmission | null>(null);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const mapMemorial = (m: any): MemorialSubmission => ({
     id: m._id,
@@ -61,7 +67,7 @@ export default function MemorialsManagement() {
     try {
       const res = await api.get("/admin/memorials");
       setSubmissions(res.data.memorials.map(mapMemorial));
-    } catch (error) {
+    } catch {
       toast.error("Failed to fetch memorials");
     } finally {
       setLoading(false);
@@ -81,7 +87,28 @@ export default function MemorialsManagement() {
     toast.success("Memorial updated successfully.");
   };
 
+  const confirmDelete = async () => {
+    if (!deleteTarget) {
+      return;
+    }
+
+    try {
+      await api.delete(`/admin/memorials/${deleteTarget.id}`);
+      setSubmissions((current) =>
+        current.filter((submission) => submission.id !== deleteTarget.id)
+      );
+      setDeleteTarget(null);
+      toast.success("Memorial deleted successfully.");
+    } catch {
+      toast.error("Failed to delete memorial");
+    }
+  };
+
   if (loading) return <div className="p-8 text-center">Loading memorials...</div>;
+
+  const totalPages = Math.max(1, Math.ceil(submissions.length / PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedSubmissions = submissions.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -90,9 +117,15 @@ export default function MemorialsManagement() {
       </h1>
 
       <MemorialSubmissionsTable
-        submissions={submissions}
+        submissions={paginatedSubmissions}
         onEdit={setSelectedSubmission}
-        onDelete={() => {}}
+        onRequestDelete={setDeleteTarget}
+      />
+      <AdminPagination
+        currentPage={safePage}
+        pageSize={PAGE_SIZE}
+        totalItems={submissions.length}
+        onPageChange={setCurrentPage}
       />
 
       {selectedSubmission && (
@@ -102,6 +135,13 @@ export default function MemorialsManagement() {
           onClose={() => setSelectedSubmission(null)}
         />
       )}
+
+      <DeleteSubmissionDialog
+        submission={deleteTarget}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={confirmDelete}
+      />
+      
     </div>
   );
 }

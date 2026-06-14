@@ -5,6 +5,9 @@ import { toast } from "sonner";
 import { useAxios } from "../../../context/AxiosProvider";
 import Image from "next/image";
 import { Plus, Pencil, Trash2, ExternalLink, Eye, EyeOff } from "lucide-react";
+import AdminPagination from "./AdminPagination";
+
+const PAGE_SIZE = 6;
 
 interface Ad {
   _id: string;
@@ -36,6 +39,7 @@ export default function AdsManagement() {
   const [editingAd, setEditingAd] = useState<Ad | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Form State
   const [adTitle, setAdTitle] = useState("");
@@ -142,6 +146,10 @@ export default function AdsManagement() {
 
   if (loading) return <div className="p-8 text-center text-slate-500">Loading ads...</div>;
 
+  const totalPages = Math.max(1, Math.ceil(ads.length / PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedAds = ads.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       {/* HEADER */}
@@ -229,7 +237,7 @@ export default function AdsManagement() {
 
       {/* ADS GRID */}
       <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-        {ads.map((ad) => (
+        {paginatedAds.map((ad) => (
           <div key={ad._id} className="flex flex-col overflow-hidden rounded-2xl border border-[#ece6dd] bg-white shadow-sm">
             {/* IMAGE */}
             <div className="relative h-44 w-full bg-slate-100">
@@ -284,6 +292,12 @@ export default function AdsManagement() {
           </div>
         )}
       </div>
+      <AdminPagination
+        currentPage={safePage}
+        pageSize={PAGE_SIZE}
+        totalItems={ads.length}
+        onPageChange={setCurrentPage}
+      />
     </div>
   );
 }

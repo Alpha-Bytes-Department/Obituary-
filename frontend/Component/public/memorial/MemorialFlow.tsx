@@ -27,7 +27,7 @@ type StepId = 1 | 2 | 3 | 4;
 
 type AdvertisementDraft = {
   id: string;
-  image: string[];
+  image: File[];
   postLink: string;
 };
 
@@ -67,15 +67,15 @@ type SubmissionFlow = {
     careerSummary: string;
   };
   mediaUpload: {
-    funeralHomeLogo: string[];
-    celebrationPhotos: string[];
+    funeralHomeLogo: File[];
+    celebrationPhotos: File[];
   };
   others: {
     relationshipToDeceased: string;
     funeralHomeDetails: FuneralHomeDetails;
     advertisements: AdvertisementDraft[];
   };
-  familyTreeDiagram: string[];
+  familyTreeDiagram: File[];
   funeralNotice: FuneralNotice;
 };
 
@@ -137,17 +137,12 @@ const initialFlow: SubmissionFlow = {
 const isStepId = (value: unknown): value is StepId =>
   value === 1 || value === 2 || value === 3 || value === 4;
 
-const normalizeStringArray = (value: unknown): string[] =>
-  Array.isArray(value)
-    ? value.filter((item): item is string => typeof item === "string")
-    : [];
-
 const normalizeAdvertisement = (
   value: Partial<AdvertisementDraft> | undefined,
   fallbackId: string,
 ): AdvertisementDraft => ({
   id: typeof value?.id === "string" ? value.id : fallbackId,
-  image: normalizeStringArray(value?.image),
+  image: [],
   postLink: typeof value?.postLink === "string" ? value.postLink : "",
 });
 
@@ -182,7 +177,7 @@ const normalizeFlow = (value: unknown): SubmissionFlow => {
         ? [
             normalizeAdvertisement(
               {
-                image: normalizeStringArray(rawOthers.profilePhoto),
+                image: [],
                 postLink:
                   typeof rawOthers.postLink === "string"
                     ? rawOthers.postLink
@@ -243,10 +238,8 @@ const normalizeFlow = (value: unknown): SubmissionFlow => {
           : "",
     },
     mediaUpload: {
-      funeralHomeLogo: normalizeStringArray(raw.mediaUpload?.funeralHomeLogo),
-      celebrationPhotos: normalizeStringArray(
-        raw.mediaUpload?.celebrationPhotos,
-      ),
+      funeralHomeLogo: [],
+      celebrationPhotos: [],
     },
     others: {
       relationshipToDeceased:
@@ -283,7 +276,7 @@ const normalizeFlow = (value: unknown): SubmissionFlow => {
       },
       advertisements: legacyAdvertisement,
     },
-    familyTreeDiagram: normalizeStringArray(raw.familyTreeDiagram),
+    familyTreeDiagram: [],
     funeralNotice: {
       service: {
         name:
@@ -1224,13 +1217,13 @@ export default function MemorialFlow() {
                     <FileDropZone
                       title="Family Tree Image"
                       subtitle="PNG, JPG up to 10MB"
-                      files={flow.familyTreeDiagram as any}
+                      files={flow.familyTreeDiagram}
                       maxFiles={1}
                       multiple={false}
                       onFiles={(files) =>
                         setFlow((current) => ({
                           ...current,
-                          familyTreeDiagram: files as any,
+                          familyTreeDiagram: files,
                         }))
                       }
                     />

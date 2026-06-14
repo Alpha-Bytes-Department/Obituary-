@@ -15,7 +15,7 @@ export default function FileDropZone({
 }: {
   title: string;
   subtitle: string;
-  files: any[];
+  files: File[];
   onFiles: (files: File[]) => void;
   multiple?: boolean;
   maxFiles?: number;

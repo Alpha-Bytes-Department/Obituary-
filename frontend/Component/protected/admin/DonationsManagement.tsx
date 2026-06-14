@@ -3,7 +3,10 @@
 import { useEffect, useState } from "react";
 import { useAxios } from "../../../context/AxiosProvider";
 import { toast } from "sonner";
-import { Trash2, Heart, DollarSign, Users, TrendingUp } from "lucide-react";
+import { Trash2, Heart, DollarSign, TrendingUp } from "lucide-react";
+import AdminPagination from "./AdminPagination";
+
+const PAGE_SIZE = 10;
 
 interface Donation {
   _id: string;
@@ -39,6 +42,7 @@ export default function DonationsManagement() {
   const [stats, setStats] = useState<Stats>({ count: 0, total: 0 });
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const fetchDonations = async () => {
     try {
@@ -73,6 +77,9 @@ export default function DonationsManagement() {
       (d.memorialName || "").toLowerCase().includes(q)
     );
   });
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedDonations = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   if (loading) return <div className="p-8 text-center text-slate-500">Loading donations...</div>;
 
@@ -122,7 +129,10 @@ export default function DonationsManagement() {
         <input
           type="text"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setCurrentPage(1);
+          }}
           placeholder="Search by donor name, email, or memorial..."
           className="w-full max-w-md rounded-lg border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-[#1e3a5f]"
         />
@@ -144,7 +154,7 @@ export default function DonationsManagement() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#ece6dd]">
-              {filtered.map((donation) => (
+              {paginatedDonations.map((donation) => (
                 <tr key={donation._id} className="transition hover:bg-slate-50">
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
@@ -192,6 +202,12 @@ export default function DonationsManagement() {
             </tbody>
           </table>
         </div>
+        <AdminPagination
+          currentPage={safePage}
+          pageSize={PAGE_SIZE}
+          totalItems={filtered.length}
+          onPageChange={setCurrentPage}
+        />
       </div>
     </div>
   );

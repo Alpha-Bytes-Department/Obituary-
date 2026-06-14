@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useAxios } from "../../../context/AxiosProvider";
 import { Trash2, CheckCircle, Eye, X } from "lucide-react";
+import AdminPagination from "./AdminPagination";
+
+const PAGE_SIZE = 10;
 
 interface User {
   _id: string;
@@ -28,6 +31,7 @@ export default function UsersManagement() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const fetchUsers = async () => {
     try {
@@ -66,12 +70,17 @@ export default function UsersManagement() {
 
   if (loading) return <div className="p-8 text-center text-slate-500">Loading users...</div>;
 
+  const totalPages = Math.max(1, Math.ceil(users.length / PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedUsers = users.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-8 flex items-center justify-between">
         <h1 className="font-heading text-3xl font-semibold text-[#1e3a5f]">User Management</h1>
         <p className="text-sm text-slate-500">{users.length} user{users.length !== 1 ? "s" : ""}</p>
       </div>
+      
 
       <div className="flex gap-6">
         {/* TABLE */}
@@ -89,7 +98,7 @@ export default function UsersManagement() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#ece6dd]">
-                {users.map((user) => (
+                {paginatedUsers.map((user) => (
                   <tr key={user._id}
                     className={`transition hover:bg-slate-50 cursor-pointer ${selectedUser?._id === user._id ? "bg-blue-50" : ""}`}
                     onClick={() => setSelectedUser(user)}>
@@ -144,6 +153,12 @@ export default function UsersManagement() {
               </tbody>
             </table>
           </div>
+          <AdminPagination
+            currentPage={safePage}
+            pageSize={PAGE_SIZE}
+            totalItems={users.length}
+            onPageChange={setCurrentPage}
+          />
         </div>
 
         {/* USER DETAIL PANEL */}

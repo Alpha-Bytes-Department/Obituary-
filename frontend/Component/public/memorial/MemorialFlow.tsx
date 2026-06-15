@@ -556,6 +556,10 @@ export default function MemorialFlow() {
       });
 
       // Photos
+      formData.append(
+        "deadPersonPhotoCount",
+        String(flow.mediaUpload.celebrationPhotos.length),
+      );
       flow.mediaUpload.celebrationPhotos.forEach((file) => {
         if (file instanceof File) {
            formData.append("deadPersonPhoto", file);
@@ -565,17 +569,13 @@ export default function MemorialFlow() {
       // Funeral Home Logo
       if (flow.mediaUpload.funeralHomeLogo[0] instanceof File) {
          formData.append("funeralHomeLogo", flow.mediaUpload.funeralHomeLogo[0]);
-      } else if (user?.funeralHome?.logo) {
-         formData.append("existingFuneralHomeLogo", user.funeralHome.logo);
-      } else {
-         formData.append("existingFuneralHomeLogo", "https://res.cloudinary.com/dhyq4r3nm/image/upload/v1741544464/obituary/memorials/logos/n0yvym7tffcuzry9x46w.png");
+      } else if (user?.funeralHome?.logoImageUrl) {
+         formData.append("existingFuneralHomeLogo", user.funeralHome.logoImageUrl);
       }
 
       // Family Tree Diagram
       if (flow.familyTreeDiagram[0] instanceof File) {
          formData.append("familyTreeDiagram", flow.familyTreeDiagram[0]);
-      } else {
-         formData.append("existingFamilyTreeDiagram", "https://res.cloudinary.com/dhyq4r3nm/image/upload/v1741544464/obituary/memorials/logos/n0yvym7tffcuzry9x46w.png");
       }
 
       await api.post("/memorials", formData);

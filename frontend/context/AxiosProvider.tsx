@@ -21,7 +21,6 @@ export function AxiosProvider({ children }: { children: ReactNode }) {
       withCredentials: true,
       timeout: 10000,
       headers: {
-        "Content-Type": "application/json",
         Accept: "application/json",
       },
     });

@@ -1,4 +1,5 @@
 const Memorial = require("../models/Memorial");
+const FuneralHome = require("../models/FuneralHome");
 const { uploadBuffer } = require("../config/cloudinary");
 
 // Helper to safely upload a file to Cloudinary
@@ -42,15 +43,32 @@ exports.createMemorial = async (req, res) => {
     let funeralHomeLogo = body.existingFuneralHomeLogo || "";
     if (funeralHomeLogoFile) {
       funeralHomeLogo = await uploadToCloudinary(funeralHomeLogoFile, "obituary/memorials/logos");
+    } else if (!funeralHomeLogo) {
+      const funeralHome = await FuneralHome.findOne({ userId }).select("logoImageUrl");
+      funeralHomeLogo = funeralHome?.logoImageUrl || "";
     }
 
     // 2. Dead Person Photos
     const deadPersonPhotoFiles = files.deadPersonPhoto || [];
-    const deadPersonPhotoUrls = [];
-    for (const file of deadPersonPhotoFiles) {
-      const url = await uploadToCloudinary(file, "obituary/memorials/photos");
-      if (url) deadPersonPhotoUrls.push(url);
+    const expectedPhotoCount = Number(body.deadPersonPhotoCount || 0);
+
+    if (
+      Number.isInteger(expectedPhotoCount) &&
+      expectedPhotoCount > 0 &&
+      deadPersonPhotoFiles.length !== expectedPhotoCount
+    ) {
+      return res.status(400).json({
+        message: `Expected ${expectedPhotoCount} deceased person photo(s), but received ${deadPersonPhotoFiles.length}. Please select the photos again and retry.`,
+      });
     }
+
+    const deadPersonPhotoUrls = (
+      await Promise.all(
+        deadPersonPhotoFiles.map((file) =>
+          uploadToCloudinary(file, "obituary/memorials/photos"),
+        ),
+      )
+    ).filter(Boolean);
     // Append any existing photos passed from frontend
     let existingPhotos = [];
     if (body.existingDeadPersonPhotos) {

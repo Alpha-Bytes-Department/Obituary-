@@ -154,7 +154,7 @@ export default function AdminEditDialog({ submission, onSaved, onClose }: Props)
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="w-[calc(100%-1rem)] max-w-5xl p-0 sm:max-w-5xl overflow-hidden">
+      <DialogContent className="w-[calc(100%-1rem)] max-w-5xl p-0 sm:max-w-5xl overflow-x-auto">
         <div className="flex flex-col max-h-[92vh]">
           {/* Header */}
           <DialogHeader className="px-6 py-4 border-b border-slate-100 flex-shrink-0">

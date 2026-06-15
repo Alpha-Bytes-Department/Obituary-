@@ -77,7 +77,7 @@ export default function StripeDonationForm({
         // Notify backend to record the donation
         try {
           const apiUrl =
-            process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+            process.env.NEXT_PUBLIC_API_URL || "/api";
           await fetch(`${apiUrl}/donations/${memorialId}/confirm`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },

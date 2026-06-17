@@ -4,6 +4,10 @@ const cookieParser = require("cookie-parser");
 const helmet = require("helmet");
 const morgan = require("morgan");
 
+function normalizeOrigin(origin) {
+  return origin?.trim().replace(/\/$/, "");
+}
+
 /**
  * Register the global middleware stack.
  *
@@ -18,10 +22,14 @@ function registerMiddlewares(app) {
     process.env.FRONTEND_URL,
     ...(process.env.CORS_ORIGINS || "").split(","),
   ]
-    .map((origin) => origin?.trim())
+    .map(normalizeOrigin)
     .filter(Boolean);
 
   const allowedOrigins = new Set([
+    "https://orbelofy.com",
+    "https://www.orbelofy.com",
+    "http://orbelofy.com",
+    "http://www.orbelofy.com",
     "https://qbits-demo.vercel.app",
     "http://72.60.20.226",
     "http://localhost:4000",
@@ -32,7 +40,7 @@ function registerMiddlewares(app) {
   app.use(
     cors({
       origin: (origin, callback) => {
-        if (!origin || allowedOrigins.has(origin)) {
+        if (!origin || allowedOrigins.has(normalizeOrigin(origin))) {
           return callback(null, true);
         }
 

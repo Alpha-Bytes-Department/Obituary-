@@ -23,6 +23,11 @@ const crimsonText = Crimson_Text({
 export const metadata: Metadata = {
   title: "Memorials & Obituaries",
   description: "Frontend shell for the Memorials & Obituaries platform",
+  icons: {
+    icon: "/favicon.png",
+    shortcut: "/favicon.png",
+    apple: "/favicon.png",
+  },
 };
 
 export default function RootLayout({

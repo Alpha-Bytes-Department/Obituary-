@@ -190,19 +190,20 @@ export default function Navbar() {
         </div>
       </div>
 
-      <div
-        className={`fixed inset-0 z-30 lg:hidden ${menuOpen ? "pointer-events-auto" : "pointer-events-none"}`}
-        aria-hidden={!menuOpen}
-      >
+      {menuOpen && (
         <div
-          className={`absolute inset-0 bg-slate-950/35 transition-opacity duration-700 ease-in-out ${menuOpen ? "opacity-100" : "opacity-0"}`}
-          onClick={() => setMenuOpen(false)}
-        />
-
-        <aside
-          id="mobile-navigation-drawer"
-          className={`absolute left-0 top-0 flex h-full w-[min(86vw,20rem)] flex-col border-r border-[#eadfce] bg-[#fffaf4] shadow-[20px_0_60px_rgba(15,23,42,0.14)] transition-transform duration-700 ease-in-out ${menuOpen ? "translate-x-0" : "-translate-x-full"}`}
+          className="fixed inset-0 z-30 lg:hidden"
+          aria-hidden={!menuOpen}
         >
+          <div
+            className="absolute inset-0 bg-slate-950/35"
+            onClick={() => setMenuOpen(false)}
+          />
+
+          <aside
+            id="mobile-navigation-drawer"
+            className="absolute left-0 top-0 flex h-full w-[min(86vw,20rem)] flex-col border-r border-[#eadfce] bg-[#fffaf4] shadow-[20px_0_60px_rgba(15,23,42,0.14)]"
+          >
           <div className="flex items-center justify-between border-b border-[#efe4d5] px-5 py-4">
             <Link
               href="/"
@@ -316,8 +317,9 @@ export default function Navbar() {
               )}
             </div>
           </div>
-        </aside>
-      </div>
+          </aside>
+        </div>
+      )}
     </header>
   );
 }

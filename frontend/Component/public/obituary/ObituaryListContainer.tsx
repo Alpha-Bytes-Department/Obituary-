@@ -390,9 +390,9 @@ export default function ObituaryListContainer() {
         </div>
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-30 px-3 pb-3 lg:hidden">
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 px-3 pb-3 lg:hidden">
         <div
-          className={`rounded-t-md border border-black/6 bg-white/98 shadow-[0_-16px_40px_rgba(15,23,42,0.12)] backdrop-blur transition-transform duration-500 ease-out ${
+          className={`pointer-events-auto rounded-t-md border border-black/6 bg-white/98 shadow-[0_-16px_40px_rgba(15,23,42,0.12)] backdrop-blur transition-transform duration-500 ease-out ${
             mobileFiltersOpen
               ? "translate-y-0"
               : "translate-y-[calc(100%-3.75rem)]"

@@ -15,12 +15,43 @@ const { uploadBuffer } = require("../config/cloudinary");
 
 const OTP_EXPIRY_MINUTES = 10;
 const RESET_TOKEN_EXPIRY_MINUTES = 15;
+const LOCAL_FRONTEND_URL = "http://localhost:3000";
+const PRODUCTION_FRONTEND_URL = "https://orbelofy.com";
+const TRUSTED_FRONTEND_ORIGINS = new Set([
+  "https://orbelofy.com",
+  "https://www.orbelofy.com",
+  "http://orbelofy.com",
+  "http://www.orbelofy.com",
+  "http://localhost:3000",
+]);
 
 // ========= Email normalizer==========
 function normalizeEmail(email) {
   return String(email || "")
     .trim()
     .toLowerCase();
+}
+
+function normalizeBaseUrl(value) {
+  return String(value || "")
+    .trim()
+    .replace(/\/$/, "");
+}
+
+function getFrontendBaseUrl(req) {
+  const requestOrigin = normalizeBaseUrl(req.get("origin"));
+  if (TRUSTED_FRONTEND_ORIGINS.has(requestOrigin)) {
+    return requestOrigin.replace(/^http:\/\/(www\.)?orbelofy\.com$/i, "https://$1orbelofy.com");
+  }
+
+  const requestHost = normalizeBaseUrl(
+    req.get("x-forwarded-host") || req.get("host"),
+  ).toLowerCase();
+  if (requestHost.includes("orbelofy.com")) {
+    return PRODUCTION_FRONTEND_URL;
+  }
+
+  return normalizeBaseUrl(process.env.FRONTEND_URL) || LOCAL_FRONTEND_URL;
 }
 
 // ============= Access & Refresh Token builder =============
@@ -279,7 +310,7 @@ exports.requestPasswordReset = async (req, res) => {
       expiresAt: new Date(Date.now() + RESET_TOKEN_EXPIRY_MINUTES * 60 * 1000),
     });
 
-    const frontendBaseUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    const frontendBaseUrl = getFrontendBaseUrl(req);
     const resetUrl = `${frontendBaseUrl}/forgot-password/${user._id}/${rawToken}`;
 
     await sendMail({

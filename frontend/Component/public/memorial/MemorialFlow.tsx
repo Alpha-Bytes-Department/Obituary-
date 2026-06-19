@@ -68,7 +68,8 @@ type SubmissionFlow = {
   };
   mediaUpload: {
     funeralHomeLogo: File[];
-    celebrationPhotos: File[];
+    mainPhoto: File[];
+    galleryPhotos: File[];
   };
   others: {
     relationshipToDeceased: string;
@@ -85,6 +86,20 @@ type DraftState = {
 };
 
 const DRAFT_STORAGE_KEY = "memorial-flow-draft";
+const GOOGLE_MAP_HOSTS = ["google.", "maps.google.", "maps.app.goo.gl", "goo.gl"];
+const RELATIONSHIP_OPTIONS = [
+  "Spouse",
+  "Partner",
+  "Child",
+  "Parent",
+  "Sibling",
+  "Grandchild",
+  "Grandparent",
+  "Relative",
+  "Friend",
+  "Funeral home representative",
+  "Other",
+];
 
 const createAdvertisement = (id: string): AdvertisementDraft => ({
   id,
@@ -123,7 +138,8 @@ const initialFlow: SubmissionFlow = {
   },
   mediaUpload: {
     funeralHomeLogo: [],
-    celebrationPhotos: [],
+    mainPhoto: [],
+    galleryPhotos: [],
   },
   others: {
     relationshipToDeceased: "",
@@ -136,6 +152,35 @@ const initialFlow: SubmissionFlow = {
 
 const isStepId = (value: unknown): value is StepId =>
   value === 1 || value === 2 || value === 3 || value === 4;
+
+const clean = (value: string) => value.trim();
+
+const hasValue = (value: string) => clean(value).length > 0;
+
+const isValidEmail = (value: string) =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean(value));
+
+const isValidHttpUrl = (value: string) => {
+  try {
+    const parsed = new URL(clean(value));
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+};
+
+const isGoogleMapLink = (value: string) => {
+  if (!isValidHttpUrl(value)) return false;
+
+  const parsed = new URL(clean(value));
+  const host = parsed.hostname.toLowerCase();
+  const href = parsed.href.toLowerCase();
+
+  return (
+    GOOGLE_MAP_HOSTS.some((allowedHost) => host.includes(allowedHost)) &&
+    (href.includes("/maps") || host === "maps.app.goo.gl" || href.includes("goo.gl/maps"))
+  );
+};
 
 const normalizeAdvertisement = (
   value: Partial<AdvertisementDraft> | undefined,
@@ -239,7 +284,8 @@ const normalizeFlow = (value: unknown): SubmissionFlow => {
     },
     mediaUpload: {
       funeralHomeLogo: [],
-      celebrationPhotos: [],
+      mainPhoto: [],
+      galleryPhotos: [],
     },
     others: {
       relationshipToDeceased:
@@ -469,6 +515,112 @@ export default function MemorialFlow() {
     }));
   };
 
+  const validateCurrentStep = (step: StepId): boolean => {
+    const { personalDetails } = flow;
+    const { funeralHomeDetails, advertisements, relationshipToDeceased } =
+      flow.others;
+    const { service, reception } = flow.funeralNotice;
+
+    if (step === 1) {
+      if (!hasValue(personalDetails.fullName)) {
+        toast.error("Please enter the deceased person's full name.");
+        return false;
+      }
+
+      if (!hasValue(personalDetails.dateOfDeath)) {
+        toast.error("Please provide the date of death.");
+        return false;
+      }
+
+      const deathDate = new Date(personalDetails.dateOfDeath);
+      if (Number.isNaN(deathDate.getTime())) {
+        toast.error("Please provide a valid date of death.");
+        return false;
+      }
+
+      if (hasValue(personalDetails.birthdate)) {
+        const birthDate = new Date(personalDetails.birthdate);
+        if (Number.isNaN(birthDate.getTime())) {
+          toast.error("Please provide a valid birth date or leave it empty.");
+          return false;
+        }
+
+        if (birthDate >= deathDate) {
+          toast.error("Birth date cannot be the same as or newer than death date.");
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    if (step === 2) {
+      return true;
+    }
+
+    if (step === 3) {
+      const totalPhotos =
+        flow.mediaUpload.mainPhoto.length + flow.mediaUpload.galleryPhotos.length;
+      if (totalPhotos > 30) {
+        toast.error("Please keep deceased person photos to 30 images total.");
+        return false;
+      }
+
+      return true;
+    }
+
+    if (!hasValue(relationshipToDeceased)) {
+      toast.error("Please select your relationship to the deceased.");
+      return false;
+    }
+
+    if (hasValue(funeralHomeDetails.websiteLink) && !isValidHttpUrl(funeralHomeDetails.websiteLink)) {
+      toast.error("Please enter a valid funeral home website link starting with http:// or https://.");
+      return false;
+    }
+
+    if (hasValue(funeralHomeDetails.mail) && !isValidEmail(funeralHomeDetails.mail)) {
+      toast.error("Please enter a valid funeral home email address.");
+      return false;
+    }
+
+    if (hasValue(funeralHomeDetails.mapLink) && !isGoogleMapLink(funeralHomeDetails.mapLink)) {
+      toast.error("Funeral home map link must be a valid Google Maps link.");
+      return false;
+    }
+
+    if (hasValue(service.mapLink)) {
+      if (!isGoogleMapLink(service.mapLink)) {
+        toast.error("Service map link must be a valid Google Maps link.");
+        return false;
+      }
+    }
+
+    if (hasValue(reception.mapLink)) {
+      if (!isGoogleMapLink(reception.mapLink)) {
+        toast.error("Reception map link must be a valid Google Maps link.");
+        return false;
+      }
+    }
+
+    for (const [index, advertisement] of advertisements.entries()) {
+      const hasImage = advertisement.image.length > 0;
+      const hasLink = hasValue(advertisement.postLink);
+
+      if (hasImage !== hasLink) {
+        toast.error(`Advertisement ${index + 1} needs both an image and a valid link.`);
+        return false;
+      }
+
+      if (hasLink && !isValidHttpUrl(advertisement.postLink)) {
+        toast.error(`Advertisement ${index + 1} link must start with http:// or https://.`);
+        return false;
+      }
+    }
+
+    return true;
+  };
+
   useEffect(() => {
     try {
       window.localStorage.setItem(
@@ -489,20 +641,11 @@ export default function MemorialFlow() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    if (!validateCurrentStep(currentStep)) {
+      return;
+    }
+
     if (currentStep < 4) {
-      if (currentStep === 1) {
-        if (flow.personalDetails.birthdate && flow.personalDetails.dateOfDeath) {
-          const bd = new Date(flow.personalDetails.birthdate);
-          const dd = new Date(flow.personalDetails.dateOfDeath);
-          if (bd >= dd) {
-            toast.error("Birth date cannot be the same as or newer than death date.");
-            return;
-          }
-        } else {
-          toast.error("Please provide both birth date and date of death.");
-          return;
-        }
-      }
       setCurrentStep((step) => (step === 4 ? 4 : ((step + 1) as StepId)));
       return;
     }
@@ -510,43 +653,51 @@ export default function MemorialFlow() {
     setIsSubmitting(true);
     try {
       const formData = new FormData();
-      formData.append("name", flow.personalDetails.fullName || "Unknown Name");
-      formData.append("birthdate", flow.personalDetails.birthdate || new Date().toISOString());
-      formData.append("deathDate", flow.personalDetails.dateOfDeath || new Date().toISOString());
-      formData.append("location", flow.personalDetails.location || "Unknown Location");
-      formData.append("memorialDetails", flow.personalDetails.obituary || "N/A");
-      formData.append("familyDetails", flow.personalDetails.familyDetails || "N/A");
-      formData.append("lifeStory", flow.obituaryContent.lifeStory || "N/A");
-      formData.append("rememberForEverQuote", flow.obituaryContent.livesRememberedForever || "N/A");
-      formData.append("favouriteQuote", flow.obituaryContent.favoriteQuote || "N/A");
-      formData.append("careerSummery", flow.obituaryContent.careerSummary || "N/A");
-      formData.append("relationToDeceased", flow.others.relationshipToDeceased || "N/A");
+      formData.append("name", clean(flow.personalDetails.fullName));
+      formData.append("birthdate", flow.personalDetails.birthdate);
+      formData.append("deathDate", flow.personalDetails.dateOfDeath);
+      formData.append("location", clean(flow.personalDetails.location));
+      formData.append("memorialDetails", clean(flow.personalDetails.obituary));
+      formData.append("familyDetails", clean(flow.personalDetails.familyDetails));
+      formData.append("lifeStory", clean(flow.obituaryContent.lifeStory));
+      formData.append("rememberForEverQuote", clean(flow.obituaryContent.livesRememberedForever));
+      formData.append("favouriteQuote", clean(flow.obituaryContent.favoriteQuote));
+      formData.append("careerSummery", clean(flow.obituaryContent.careerSummary));
+      formData.append("relationToDeceased", flow.others.relationshipToDeceased);
       
       const mappedFuneralHomeDetails = {
-        name: flow.others.funeralHomeDetails.name || "N/A",
-        website: flow.others.funeralHomeDetails.websiteLink || "",
-        phone: flow.others.funeralHomeDetails.phone || "N/A",
-        email: flow.others.funeralHomeDetails.mail || "noemail@example.com",
-        address: flow.others.funeralHomeDetails.location || "N/A",
-        mapLink: flow.others.funeralHomeDetails.mapLink || "N/A",
+        name: clean(flow.others.funeralHomeDetails.name),
+        website: clean(flow.others.funeralHomeDetails.websiteLink),
+        phone: clean(flow.others.funeralHomeDetails.phone),
+        email: clean(flow.others.funeralHomeDetails.mail),
+        address: clean(flow.others.funeralHomeDetails.location),
+        mapLink: clean(flow.others.funeralHomeDetails.mapLink),
       };
 
+      const serviceNotice = {
+        serviceLocation: clean(flow.funeralNotice.service.location),
+        serviceName: clean(flow.funeralNotice.service.name),
+        serviceMapLink: clean(flow.funeralNotice.service.mapLink),
+      };
+      const receptionNotice = {
+        ReceptionLocation: clean(flow.funeralNotice.reception.location),
+        ReceptionName: clean(flow.funeralNotice.reception.name),
+        ReceptionMapLink: clean(flow.funeralNotice.reception.mapLink),
+      };
       const mappedFuneralNotice = {
-        serviceDate: new Date().toISOString(),
-        serviceLocation: flow.funeralNotice.service.location || "N/A",
-        serviceName: flow.funeralNotice.service.name || "N/A",
-        serviceMapLink: flow.funeralNotice.service.mapLink || "N/A",
-        ReceptionDate: new Date().toISOString(),
-        ReceptionLocation: flow.funeralNotice.reception.location || "N/A",
-        ReceptionName: flow.funeralNotice.reception.name || "N/A",
-        ReceptionMapLink: flow.funeralNotice.reception.mapLink || "N/A",
+        ...(Object.values(serviceNotice).some(Boolean)
+          ? { serviceDate: new Date().toISOString(), ...serviceNotice }
+          : serviceNotice),
+        ...(Object.values(receptionNotice).some(Boolean)
+          ? { ReceptionDate: new Date().toISOString(), ...receptionNotice }
+          : receptionNotice),
       };
 
       formData.append("funeralHomeDetails", JSON.stringify(mappedFuneralHomeDetails));
       formData.append("funeralNotice", JSON.stringify(mappedFuneralNotice));
       
       // Ads
-      const adsData = flow.others.advertisements.map(ad => ({ link: ad.postLink || "#" }));
+      const adsData = flow.others.advertisements.map(ad => ({ link: clean(ad.postLink) }));
       formData.append("funeralHomeAdvertisement", JSON.stringify(adsData));
       
       flow.others.advertisements.forEach((ad, i) => {
@@ -555,12 +706,16 @@ export default function MemorialFlow() {
         }
       });
 
-      // Photos
+      // Photos. The main photo is appended first so it becomes the thumbnail.
+      const deceasedPhotos = [
+        ...flow.mediaUpload.mainPhoto,
+        ...flow.mediaUpload.galleryPhotos,
+      ].slice(0, 30);
       formData.append(
         "deadPersonPhotoCount",
-        String(flow.mediaUpload.celebrationPhotos.length),
+        String(deceasedPhotos.length),
       );
-      flow.mediaUpload.celebrationPhotos.forEach((file) => {
+      deceasedPhotos.forEach((file) => {
         if (file instanceof File) {
            formData.append("deadPersonPhoto", file);
         }
@@ -725,7 +880,7 @@ export default function MemorialFlow() {
                     />
                   </div>
                   <div>
-                    <Label>Location *</Label>
+                    <Label>Location</Label>
                     <TextInput
                       value={flow.personalDetails.location}
                       onChange={(value) =>
@@ -788,7 +943,7 @@ export default function MemorialFlow() {
             <SectionCard title="Memorial Content">
               <div className="space-y-5">
                 <div>
-                  <Label>Life Story *</Label>
+                  <Label>Life Story</Label>
                   <TextArea
                     value={flow.obituaryContent.lifeStory}
                     onChange={(value) =>
@@ -803,9 +958,6 @@ export default function MemorialFlow() {
                     placeholder="Tell the story of their life, their accomplishments, what made them special..."
                     minRows={5}
                   />
-                  <p className="mt-1 text-xs text-slate-400">
-                    Minimum 100 characters
-                  </p>
                 </div>
 
                 <div>
@@ -886,16 +1038,33 @@ export default function MemorialFlow() {
                 />
 
                 <FileDropZone
-                  title="Deceased Person Photo"
-                  subtitle="PNG, JPG up to 10MB"
-                  files={flow.mediaUpload.celebrationPhotos}
-                  maxFiles={20}
+                  title="Main Photo"
+                  subtitle="This single image becomes the obituary thumbnail. PNG, JPG up to 10MB"
+                  files={flow.mediaUpload.mainPhoto}
+                  maxFiles={1}
+                  multiple={false}
                   onFiles={(files) =>
                     setFlow((current) => ({
                       ...current,
                       mediaUpload: {
                         ...current.mediaUpload,
-                        celebrationPhotos: files,
+                        mainPhoto: files,
+                      },
+                    }))
+                  }
+                />
+
+                <FileDropZone
+                  title="Additional Deceased Person Photos"
+                  subtitle="These appear after the main photo. PNG, JPG up to 10MB"
+                  files={flow.mediaUpload.galleryPhotos}
+                  maxFiles={29}
+                  onFiles={(files) =>
+                    setFlow((current) => ({
+                      ...current,
+                      mediaUpload: {
+                        ...current.mediaUpload,
+                        galleryPhotos: files,
                       },
                     }))
                   }
@@ -909,19 +1078,27 @@ export default function MemorialFlow() {
               <div className="space-y-6">
                 <div>
                   <Label>Relationship to Deceased *</Label>
-                  <TextInput
+                  <select
                     value={flow.others.relationshipToDeceased}
-                    onChange={(value) =>
+                    onChange={(event) =>
                       setFlow((current) => ({
                         ...current,
                         others: {
                           ...current.others,
-                          relationshipToDeceased: value,
+                          relationshipToDeceased: event.target.value,
                         },
                       }))
                     }
-                    placeholder="Enter relationship"
-                  />
+                    className="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#274877]"
+                    required
+                  >
+                    <option value="">Select relationship</option>
+                    {RELATIONSHIP_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
@@ -953,6 +1130,7 @@ export default function MemorialFlow() {
                           updateFuneralHomeDetails("websiteLink", value)
                         }
                         placeholder="https://example.com"
+                        type="url"
                       />
                     </div>
                     <div>
@@ -963,6 +1141,7 @@ export default function MemorialFlow() {
                           updateFuneralHomeDetails("mail", value)
                         }
                         placeholder="hello@example.com"
+                        type="email"
                       />
                     </div>
                     <div>
@@ -993,6 +1172,7 @@ export default function MemorialFlow() {
                           updateFuneralHomeDetails("mapLink", value)
                         }
                         placeholder="Paste Google Maps link"
+                        type="url"
                       />
                     </div>
                   </div>
@@ -1053,6 +1233,7 @@ export default function MemorialFlow() {
                             }))
                           }
                           placeholder="Paste Google Maps link"
+                          type="url"
                         />
                       </div>
                     </div>
@@ -1102,6 +1283,7 @@ export default function MemorialFlow() {
                             }))
                           }
                           placeholder="Paste Google Maps link"
+                          type="url"
                         />
                       </div>
                     </div>
@@ -1189,6 +1371,7 @@ export default function MemorialFlow() {
                                   )
                                 }
                                 placeholder="Paste advertisement link here"
+                                type="url"
                               />
                             </div>
                           </div>

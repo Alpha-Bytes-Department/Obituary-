@@ -25,7 +25,7 @@ export default function MemorialsManagement() {
     memorialImage: m.deadPersonPhoto?.[0] || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=900&q=80",
     deceasedFirstName: m.name ? m.name.split(" ")[0] : "",
     deceasedLastName: m.name ? m.name.split(" ").slice(1).join(" ") : "",
-    rejectionReason: m.rejectionReason || "",
+    rejectionReason: m.rejectionReason || m.rejectedReason || "",
     dateOfBirth: m.birthdate || "",
     dateOfDeath: m.deathDate || "",
     biography: m.memorialDetails || "",
@@ -61,6 +61,8 @@ export default function MemorialsManagement() {
     rememberForEverQuoteVisibilityStatus: m.rememberForEverQuoteVisibilityStatus ?? true,
     favouriteQuoteVisibilityStatus: m.favouriteQuoteVisibilityStatus ?? true,
     careerSummeryVisibilityStatus: m.careerSummeryVisibilityStatus ?? true,
+    donationsEnabled: m.donationsEnabled ?? true,
+    showInLivesRememberedForever: m.showInLivesRememberedForever ?? false,
   });
 
   const fetchMemorials = async () => {
@@ -120,6 +122,7 @@ export default function MemorialsManagement() {
         submissions={paginatedSubmissions}
         onEdit={setSelectedSubmission}
         onRequestDelete={setDeleteTarget}
+        showAdminColumns
       />
       <AdminPagination
         currentPage={safePage}

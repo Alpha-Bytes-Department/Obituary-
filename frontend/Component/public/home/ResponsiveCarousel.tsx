@@ -97,10 +97,16 @@ export default function ResponsiveCarousel({
     [maxIndex],
   );
 
-  const resetTimer = useCallback(() => {
+  const pauseTimer = useCallback(() => {
     if (timerRef.current !== null) window.clearInterval(timerRef.current);
+    timerRef.current = null;
+  }, []);
+
+  const resetTimer = useCallback(() => {
+    pauseTimer();
+    if (items.length <= visibleCount) return;
     timerRef.current = window.setInterval(next, AUTO_DELAY);
-  }, [next]);
+  }, [items.length, next, pauseTimer, visibleCount]);
 
   useEffect(() => {
     resetTimer();
@@ -133,7 +139,13 @@ export default function ResponsiveCarousel({
       };
 
   return (
-    <div className="select-none font-sans">
+    <div
+      className="select-none font-sans"
+      onMouseEnter={pauseTimer}
+      onMouseLeave={resetTimer}
+      onFocus={pauseTimer}
+      onBlur={resetTimer}
+    >
       <div className="flex items-center gap-2 md:gap-3">
         {/* Left arrow */}
         {!isMobile && (

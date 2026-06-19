@@ -2,6 +2,120 @@ const Memorial = require("../models/Memorial");
 const FuneralHome = require("../models/FuneralHome");
 const { uploadBuffer } = require("../config/cloudinary");
 
+const RELATIONSHIP_OPTIONS = new Set([
+  "Spouse",
+  "Partner",
+  "Child",
+  "Parent",
+  "Sibling",
+  "Grandchild",
+  "Grandparent",
+  "Relative",
+  "Friend",
+  "Funeral home representative",
+  "Other",
+]);
+const GOOGLE_MAP_HOSTS = ["google.", "maps.google.", "maps.app.goo.gl", "goo.gl"];
+
+function clean(value) {
+  return String(value || "").trim();
+}
+
+function hasValue(value) {
+  return clean(value).length > 0;
+}
+
+function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean(value));
+}
+
+function isValidHttpUrl(value) {
+  try {
+    const parsed = new URL(clean(value));
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function isGoogleMapLink(value) {
+  if (!isValidHttpUrl(value)) return false;
+
+  const parsed = new URL(clean(value));
+  const host = parsed.hostname.toLowerCase();
+  const href = parsed.href.toLowerCase();
+
+  return (
+    GOOGLE_MAP_HOSTS.some((allowedHost) => host.includes(allowedHost)) &&
+    (href.includes("/maps") || host === "maps.app.goo.gl" || href.includes("goo.gl/maps"))
+  );
+}
+
+function validateMemorialPayload(body, funeralHomeDetails, funeralNotice, ads) {
+  if (!hasValue(body.name)) return "Deceased person's full name is required";
+  if (!hasValue(body.deathDate)) return "Date of death is required";
+
+  const deathDate = new Date(body.deathDate);
+  if (Number.isNaN(deathDate.getTime())) {
+    return "Date of death must be a valid date";
+  }
+
+  if (hasValue(body.birthdate)) {
+    const birthDate = new Date(body.birthdate);
+    if (Number.isNaN(birthDate.getTime())) {
+      return "Birth date must be valid when provided";
+    }
+
+    if (birthDate >= deathDate) {
+      return "Birth date cannot be the same as or newer than death date";
+    }
+  }
+
+  if (!RELATIONSHIP_OPTIONS.has(clean(body.relationToDeceased))) {
+    return "Please select a valid relationship to the deceased";
+  }
+
+  if (hasValue(funeralHomeDetails.website) && !isValidHttpUrl(funeralHomeDetails.website)) {
+    return "Funeral home website must be a valid link";
+  }
+
+  if (hasValue(funeralHomeDetails.email) && !isValidEmail(funeralHomeDetails.email)) {
+    return "Funeral home email must be valid";
+  }
+
+  if (hasValue(funeralHomeDetails.mapLink) && !isGoogleMapLink(funeralHomeDetails.mapLink)) {
+    return "Funeral home map link must be a valid Google Maps link";
+  }
+
+  const hasServiceDetails =
+    hasValue(funeralNotice.serviceName) ||
+    hasValue(funeralNotice.serviceLocation) ||
+    hasValue(funeralNotice.serviceMapLink);
+  if (hasServiceDetails && hasValue(funeralNotice.serviceMapLink)) {
+    if (!isGoogleMapLink(funeralNotice.serviceMapLink)) {
+      return "Service map link must be a valid Google Maps link";
+    }
+  }
+
+  const hasReceptionDetails =
+    hasValue(funeralNotice.ReceptionName) ||
+    hasValue(funeralNotice.ReceptionLocation) ||
+    hasValue(funeralNotice.ReceptionMapLink);
+  if (hasReceptionDetails && hasValue(funeralNotice.ReceptionMapLink)) {
+    if (!isGoogleMapLink(funeralNotice.ReceptionMapLink)) {
+      return "Reception map link must be a valid Google Maps link";
+    }
+  }
+
+  for (const [index, ad] of ads.entries()) {
+    if (hasValue(ad.link) && !isValidHttpUrl(ad.link)) {
+      return `Advertisement ${index + 1} link must be a valid link`;
+    }
+  }
+
+  return null;
+}
+
 // Helper to safely upload a file to Cloudinary
 async function uploadToCloudinary(file, folder) {
   if (!file) return null;
@@ -33,6 +147,16 @@ exports.createMemorial = async (req, res) => {
       }
     } else if (Array.isArray(body.funeralHomeAdvertisement)) {
       funeralHomeAdvertisement = body.funeralHomeAdvertisement;
+    }
+
+    const validationError = validateMemorialPayload(
+      body,
+      funeralHomeDetails,
+      funeralNotice,
+      funeralHomeAdvertisement,
+    );
+    if (validationError) {
+      return res.status(400).json({ message: validationError });
     }
 
     // Process file uploads
@@ -76,7 +200,7 @@ exports.createMemorial = async (req, res) => {
         ? body.existingDeadPersonPhotos 
         : JSON.parse(body.existingDeadPersonPhotos || "[]");
     }
-    const finalDeadPersonPhotos = [...existingPhotos, ...deadPersonPhotoUrls].slice(0, 20);
+    const finalDeadPersonPhotos = [...existingPhotos, ...deadPersonPhotoUrls].slice(0, 30);
 
     // 3. Family Tree Diagram
     const familyTreeDiagramFile = files.familyTreeDiagram?.[0];
@@ -114,7 +238,7 @@ exports.createMemorial = async (req, res) => {
     const memorial = new Memorial({
       name: body.name || "",
       deathDate: body.deathDate,
-      birthdate: body.birthdate || Date.now(), // Fallback if not provided in UI
+      birthdate: body.birthdate || undefined,
       location: body.location || "",
       memorialDetails: body.memorialDetails || "",
       familyDetails: body.familyDetails || "",
@@ -207,13 +331,13 @@ exports.updateMemorial = async (req, res) => {
     const newPhotos = [];
     const deadPersonPhotoFiles = files.deadPersonPhoto || [];
     for (const file of deadPersonPhotoFiles) {
-      if (keptPhotos.length + newPhotos.length < 20) {
+      if (keptPhotos.length + newPhotos.length < 30) {
         const url = await uploadToCloudinary(file, "obituary/memorials/photos");
         if (url) newPhotos.push(url);
       }
     }
     
-    memorial.deadPersonPhoto = [...keptPhotos, ...newPhotos].slice(0, 20);
+    memorial.deadPersonPhoto = [...keptPhotos, ...newPhotos].slice(0, 30);
 
     // Funeral Home Logo
     if (files.funeralHomeLogo?.[0]) {

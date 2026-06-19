@@ -82,8 +82,8 @@ export default function Navbar() {
 
   return (
     <header className="sticky top-0 z-20 border-b border-[#ece6dd] bg-white">
-      <div className="mx-auto flex max-w-[90vw] items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-3">
+      <div className="relative mx-auto flex max-w-[90vw] items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+        <div className="flex items-center gap-3 lg:static">
           <button
             type="button"
             onClick={() => setMenuOpen(true)}
@@ -95,7 +95,7 @@ export default function Navbar() {
             <Menu className="h-5 w-5" />
           </button>
 
-          <Link href="/" className="flex flex-col leading-none">
+          <Link href="/" className="absolute left-1/2 -translate-x-1/2 leading-none lg:static lg:translate-x-0">
             <Image src={"/logo.png"} alt="Logo" width={100} height={100} />
           </Link>
         </div>

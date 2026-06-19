@@ -15,20 +15,29 @@ import { toast } from "sonner";
 
 const registerSchema = z
   .object({
-    firstName: z.string().min(2, "First name must be at least 2 characters."),
-    lastName: z.string().min(2, "Last name must be at least 2 characters."),
-    email: z.string().email("Enter a valid email address."),
-    password: z.string().min(8, "Password must be at least 8 characters."),
+    firstName: z.string().trim().min(2, "First name must be at least 2 characters."),
+    lastName: z.string().trim().min(2, "Last name must be at least 2 characters."),
+    email: z.string().trim().email("Enter a valid email address."),
+    password: z
+      .string()
+      .min(8, "Password must be at least 8 characters.")
+      .regex(/[A-Za-z]/, "Password must include at least one letter.")
+      .regex(/[0-9]/, "Password must include at least one number."),
     confirmPassword: z.string().min(8, "Confirm your password."),
     profilePicture: z.any().optional(),
     logo: z.any().optional(),
     address: z.object({
-      street: z.string().min(1, "Street is required."),
-      city: z.string().min(1, "City is required."),
-      state: z.string().min(1, "State is required."),
-      postalCode: z.string().min(1, "Postal code is required."),
-      country: z.string().min(1, "Country is required."),
+      street: z.string().trim().min(1, "Street is required."),
+      city: z.string().trim().min(1, "City is required."),
+      state: z.string().trim().min(1, "State is required."),
+      postalCode: z
+        .string()
+        .trim()
+        .min(1, "Postal code is required.")
+        .regex(/^[0-9]+$/, "Postal code must contain numbers only."),
+      country: z.string().trim().min(1, "Country is required."),
     }),
+    terms: z.boolean().refine(Boolean, "You must agree before creating an account."),
   })
   .refine((values) => values.password === values.confirmPassword, {
     message: "Passwords do not match.",
@@ -66,6 +75,7 @@ export default function RegisterForm() {
         postalCode: "",
         country: "",
       },
+      terms: true,
     },
   });
 
@@ -90,9 +100,9 @@ export default function RegisterForm() {
   const onSubmit = handleSubmit(async (data) => {
     try {
       const formData = new FormData();
-      formData.append("firstName", data.firstName);
-      formData.append("lastName", data.lastName);
-      formData.append("email", data.email);
+      formData.append("firstName", data.firstName.trim());
+      formData.append("lastName", data.lastName.trim());
+      formData.append("email", data.email.trim().toLowerCase());
       formData.append("password", data.password);
       formData.append("address", JSON.stringify(data.address));
 
@@ -109,7 +119,7 @@ export default function RegisterForm() {
       savePendingSignup({
         firstName: data.firstName,
         lastName: data.lastName,
-        email: data.email,
+        email: data.email.trim().toLowerCase(),
         password: "",
       });
 
@@ -203,7 +213,7 @@ export default function RegisterForm() {
         </div>
         <div className="space-y-2">
           <label className="block text-[0.92rem] font-semibold text-[#2f2c29]" htmlFor="postalCode">Postal Code</label>
-          <input id="postalCode" placeholder="Postal Code" className="h-12 w-full rounded-[10px] border border-[#e6e1da] bg-white px-4 text-[0.98rem] text-[#2f2c29] outline-none transition placeholder:text-[#b2ada7] focus:border-[#b4aba1]" {...register("address.postalCode")} />
+          <input id="postalCode" inputMode="numeric" pattern="[0-9]*" placeholder="Postal Code" className="h-12 w-full rounded-[10px] border border-[#e6e1da] bg-white px-4 text-[0.98rem] text-[#2f2c29] outline-none transition placeholder:text-[#b2ada7] focus:border-[#b4aba1]" {...register("address.postalCode")} />
           {errors.address?.postalCode ? <p className="text-sm text-red-600">{errors.address.postalCode.message}</p> : null}
         </div>
         <div className="space-y-2">
@@ -341,6 +351,7 @@ export default function RegisterForm() {
           type="checkbox"
           defaultChecked
           className="mt-0.5 h-4 w-4 rounded border-[#9b9187] accent-[#1e3a5f]"
+          {...register("terms")}
         />
         <label htmlFor="terms" className="leading-6">
           I agree to the{" "}
@@ -353,6 +364,9 @@ export default function RegisterForm() {
           </Link>
         </label>
       </div>
+      {errors.terms ? (
+        <p className="mt-2 text-sm text-red-600">{errors.terms.message}</p>
+      ) : null}
 
       <button
         disabled={isSubmitting}

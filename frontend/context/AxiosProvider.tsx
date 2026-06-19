@@ -19,7 +19,7 @@ export function AxiosProvider({ children }: { children: ReactNode }) {
     return axios.create({
       baseURL: process.env.NEXT_PUBLIC_API_URL ?? "/api",
       withCredentials: true,
-      timeout: 10000,
+      timeout: 60000,
       headers: {
         Accept: "application/json",
       },

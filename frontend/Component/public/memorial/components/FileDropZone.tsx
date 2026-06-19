@@ -2,7 +2,10 @@
 
 import React from "react";
 import { Upload } from "lucide-react";
+import { toast } from "sonner";
 import Label from "./Label";
+
+const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 
 export default function FileDropZone({
   title,
@@ -21,49 +24,48 @@ export default function FileDropZone({
   maxFiles?: number;
   defaultImageUrl?: string;
 }) {
-  const [previews, setPreviews] = React.useState<
-    Array<{ name: string; url: string }>
-  >([]);
-
-  // Regenerate previews when files change
-  React.useEffect(() => {
-    const fileObjects = files.filter(f => f instanceof File);
-    if (fileObjects.length === 0) {
-      setPreviews([]);
-      return;
-    }
-    
-    let loadedPreviews: { name: string; url: string }[] = [];
-    let count = 0;
-    
-    fileObjects.forEach((file: File) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        loadedPreviews.push({
+  const previews = React.useMemo(
+    () =>
+      files
+        .filter((file) => file instanceof File)
+        .map((file) => ({
           name: file.name,
-          url: typeof reader.result === "string" ? reader.result : "",
-        });
-        count++;
-        if (count === fileObjects.length) {
-          setPreviews(loadedPreviews);
-        }
-      };
-      reader.readAsDataURL(file);
-    });
-  }, [files]);
+          url: URL.createObjectURL(file),
+        })),
+    [files],
+  );
+
+  React.useEffect(() => {
+    return () => {
+      previews.forEach((preview) => URL.revokeObjectURL(preview.url));
+    };
+  }, [previews]);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(event.target.files ?? []);
     if (selectedFiles.length === 0) return;
+    const validFiles = selectedFiles.filter((file) => {
+      if (file.size <= MAX_IMAGE_SIZE_BYTES) {
+        return true;
+      }
+
+      toast.error(`${file.name} is larger than 10MB.`);
+      return false;
+    });
+
+    if (validFiles.length === 0) {
+      event.target.value = "";
+      return;
+    }
 
     let newFiles: File[] = [];
     if (multiple) {
        // Append
        const existingFiles = files.filter(f => f instanceof File);
-       newFiles = [...existingFiles, ...selectedFiles];
+       newFiles = [...existingFiles, ...validFiles];
     } else {
        // Replace
-       newFiles = selectedFiles;
+       newFiles = validFiles;
     }
 
     if (typeof maxFiles === "number") {
@@ -71,6 +73,7 @@ export default function FileDropZone({
     }
 
     onFiles(newFiles);
+    event.target.value = "";
   };
 
   const removeFile = (indexToRemove: number) => {

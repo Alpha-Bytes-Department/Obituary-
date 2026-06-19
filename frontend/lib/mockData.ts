@@ -28,6 +28,7 @@ export interface ObituaryMock {
   images: string[];
   featuredToday?: boolean;
   allTimeMemorable?: boolean;
+  showInLivesRememberedForever?: boolean;
   status?: "pending_payment" | "live" | "archived";
   paymentMethod?: "stripe" | "token" | "admin_override";
   paymentId?: string;

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Filter } from "lucide-react";
 
-import { mockObituaries, type ObituaryMock } from "../../../lib/mockData";
+import { type ObituaryMock } from "../../../lib/mockData";
 
 import ObituaryCard from "./ObituaryCard";
 import FilterStack from "./components/FilterStack";
@@ -166,10 +166,12 @@ export default function ObituaryListContainer() {
   const api = useAxios();
   const [obituaries, setObituaries] = useState<ObituaryMock[]>([]);
   const [ad, setAd] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const normalizedLink = normalizeAdLink(ad?.adLinkUrl);
 
   useEffect(() => {
     const fetchData = async () => {
+      setIsLoading(true);
       try {
         const [memRes, adRes] = await Promise.all([
           api.get("/memorials"),
@@ -219,6 +221,8 @@ export default function ObituaryListContainer() {
         setAd(ads[1] || null);
       } catch (err) {
         console.error("Failed to fetch data:", err);
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchData();
@@ -370,23 +374,43 @@ export default function ObituaryListContainer() {
         </aside>
 
         <div className="space-y-5">
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {pageItems.map((obituary) => (
-              <ObituaryCard key={obituary.id} item={obituary} />
-            ))}
-          </div>
-
-          {filteredObituaries.length === 0 ? (
-            <div className="rounded-md border border-dashed border-slate-300 bg-white px-6 py-10 text-center text-slate-600 shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
-              No memorials match the current search or filters.
+          {isLoading ? (
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3" aria-label="Loading memorials">
+              {Array.from({ length: PAGE_SIZE }).map((_, index) => (
+                <div
+                  key={`memorial-loader-${index}`}
+                  className="overflow-hidden rounded-md border border-black/5 bg-white shadow-[0_14px_32px_rgba(15,23,42,0.06)]"
+                >
+                  <div className="aspect-3/3 animate-pulse bg-slate-200" />
+                  <div className="space-y-3 p-5">
+                    <div className="h-5 w-2/3 animate-pulse rounded bg-slate-200" />
+                    <div className="h-4 w-1/2 animate-pulse rounded bg-slate-200" />
+                    <div className="h-4 w-3/4 animate-pulse rounded bg-slate-200" />
+                  </div>
+                </div>
+              ))}
             </div>
-          ) : null}
+          ) : (
+            <>
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {pageItems.map((obituary) => (
+                  <ObituaryCard key={obituary.id} item={obituary} />
+                ))}
+              </div>
 
-          <PaginationControls
-            currentPage={safeCurrentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-          />
+              {filteredObituaries.length === 0 ? (
+                <div className="rounded-md border border-dashed border-slate-300 bg-white px-6 py-10 text-center text-slate-600 shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
+                  No memorials match the current search or filters.
+                </div>
+              ) : null}
+
+              <PaginationControls
+                currentPage={safeCurrentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+              />
+            </>
+          )}
         </div>
       </div>
 

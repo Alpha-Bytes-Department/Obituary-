@@ -1,6 +1,19 @@
 const Donation = require("../models/Donation");
 const Memorial = require("../models/Memorial");
-const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const Stripe = require("stripe");
+
+let stripeClient = null;
+
+function getStripeClient() {
+  const secretKey = process.env.STRIPE_SECRET_KEY;
+  if (!secretKey || !secretKey.startsWith("sk_")) {
+    return null;
+  }
+  if (!stripeClient) {
+    stripeClient = Stripe(secretKey);
+  }
+  return stripeClient;
+}
 
 /**
  * POST /api/donations/:memorialId/create-payment-intent
@@ -19,6 +32,13 @@ const createPaymentIntent = async (req, res) => {
       });
     }
 
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(donorEmail).trim())) {
+      return res.status(400).json({
+        success: false,
+        message: "Please enter a valid donor email address.",
+      });
+    }
+
     const parsedAmount = parseFloat(amount);
     if (isNaN(parsedAmount) || parsedAmount < 1) {
       return res.status(400).json({
@@ -27,12 +47,30 @@ const createPaymentIntent = async (req, res) => {
       });
     }
 
-    // Fetch memorial name for display
-    let memorialName = "";
-    try {
-      const memorial = await Memorial.findById(memorialId).select("name");
-      if (memorial) memorialName = memorial.name || "";
-    } catch (_) {}
+    const memorial = await Memorial.findById(memorialId).select("name donationsEnabled");
+    if (!memorial) {
+      return res.status(404).json({
+        success: false,
+        message: "Memorial not found.",
+      });
+    }
+
+    if (memorial.donationsEnabled === false) {
+      return res.status(403).json({
+        success: false,
+        message: "Donations are currently turned off for this memorial.",
+      });
+    }
+
+    const stripe = getStripeClient();
+    if (!stripe) {
+      return res.status(503).json({
+        success: false,
+        message: "Donations are not configured yet. Please contact the site administrator.",
+      });
+    }
+
+    const memorialName = memorial.name || "";
 
     // Amount in cents (Stripe requires integer cents)
     const amountInCents = Math.round(parsedAmount * 100);
@@ -41,6 +79,7 @@ const createPaymentIntent = async (req, res) => {
       amount: amountInCents,
       currency: "usd",
       receipt_email: donorEmail,
+      automatic_payment_methods: { enabled: true },
       description: `Donation in memory of ${memorialName || "deceased"}`,
       metadata: {
         memorialId,
@@ -80,6 +119,26 @@ const confirmDonation = async (req, res) => {
       return res.status(400).json({ success: false, message: "paymentIntentId is required." });
     }
 
+    const stripe = getStripeClient();
+    if (!stripe) {
+      return res.status(503).json({
+        success: false,
+        message: "Donations are not configured yet. Please contact the site administrator.",
+      });
+    }
+
+    const memorial = await Memorial.findById(memorialId).select("name donationsEnabled");
+    if (!memorial) {
+      return res.status(404).json({ success: false, message: "Memorial not found." });
+    }
+
+    if (memorial.donationsEnabled === false) {
+      return res.status(403).json({
+        success: false,
+        message: "Donations are currently turned off for this memorial.",
+      });
+    }
+
     // Verify with Stripe that the payment actually succeeded
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
 
@@ -99,8 +158,7 @@ const confirmDonation = async (req, res) => {
     let memorialName = paymentIntent.metadata?.memorialName || "";
     if (!memorialName) {
       try {
-        const memorial = await Memorial.findById(memorialId).select("name");
-        if (memorial) memorialName = memorial.name || "";
+        memorialName = memorial.name || "";
       } catch (_) {}
     }
 

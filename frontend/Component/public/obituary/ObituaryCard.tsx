@@ -33,7 +33,6 @@ export default function ObituaryCard({
       year: "numeric",
     }).format(parsed);
   };
-  const birthDate = formatCalendarDate(item.dateOfBirth);
   const deathDate = formatCalendarDate(item.dateOfDeath);
   const locationLabel = [
     item.location.city,
@@ -43,6 +42,7 @@ export default function ObituaryCard({
     .filter(Boolean)
     .join(", ");
   const ageLabel = item.age ?? undefined;
+  const detailHref = `/obituary/${item.id}`;
 
   if (variant === "memorable") {
     const fallbackQuote =
@@ -58,11 +58,13 @@ export default function ObituaryCard({
         <div className="grid h-full grid-cols-1 md:grid-cols-[1.08fr_0.92fr]">
           <div className="order-2 flex flex-col justify-center px-6 py-7 text-center md:order-1 md:px-8 md:py-8 md:text-left lg:px-10 lg:py-10">
             <div className="space-y-3 md:space-y-4">
-              <h3 className="font-heading text-[1.95rem] font-semibold leading-tight tracking-[-0.035em] text-[#274877] sm:text-[2.3rem] lg:text-[2.55rem]">
-                {item.deceasedFirstName} {item.deceasedLastName}
-              </h3>
+              <Link href={detailHref} className="inline-block transition hover:text-[#16345a]">
+                <h3 className="font-heading text-[1.95rem] font-semibold leading-tight tracking-[-0.035em] text-[#274877] sm:text-[2.3rem] lg:text-[2.55rem]">
+                  {item.deceasedFirstName} {item.deceasedLastName}
+                </h3>
+              </Link>
               <p className="font-heading text-[1.25rem] tracking-[-0.02em] text-[#274877] sm:text-[1.45rem]">
-                {item.dateOfBirth?.slice(0, 4)}-{item.dateOfDeath.slice(0, 4)}
+                {deathDate}
               </p>
             </div>
 
@@ -78,14 +80,14 @@ export default function ObituaryCard({
             </blockquote>
           </div>
 
-          <div className="order-1 relative min-h-72 md:order-2 md:min-h-full">
+          <Link href={detailHref} className="order-1 relative block min-h-72 md:order-2 md:min-h-full" aria-label={`View memorial for ${item.deceasedFirstName} ${item.deceasedLastName}`}>
             <Image
               src={heroImage}
               alt={`${item.deceasedFirstName} ${item.deceasedLastName}`}
               fill
               className="object-cover object-center"
             />
-          </div>
+          </Link>
         </div>
       </article>
     );
@@ -93,7 +95,7 @@ export default function ObituaryCard({
 
   return (
     <article className="group h-full overflow-hidden rounded-md border border-black/5 bg-white shadow-[0_14px_32px_rgba(15,23,42,0.09)] transition hover:-translate-y-1 hover:shadow-[0_18px_45px_rgba(15,23,42,0.13)]">
-      <div className="relative aspect-3/3 overflow-hidden bg-linear-to-br from-[#e7e3dc] via-white to-[#f0ece5]">
+      <Link href={detailHref} className="relative block aspect-3/3 overflow-hidden bg-linear-to-br from-[#e7e3dc] via-white to-[#f0ece5]" aria-label={`View memorial for ${item.deceasedFirstName} ${item.deceasedLastName}`}>
         <Image
           src={heroImage}
           alt={`${item.deceasedFirstName} ${item.deceasedLastName}`}
@@ -101,17 +103,19 @@ export default function ObituaryCard({
           className="object-cover transition duration-500 group-hover:scale-[1.03]"
         />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.02)_0%,rgba(15,23,42,0)_50%,rgba(15,23,42,0.08)_100%)]" />
-      </div>
+      </Link>
 
       <div className="space-y-3 border-t border-[#e8e0d4] p-5 text-left">
         <div className="space-y-1">
-          <h3 className="font-heading text-xl font-bold tracking-tight text-[#16345a]">
-            {item.deceasedFirstName} {item.deceasedLastName}
-          </h3>
+          <Link href={detailHref} className="inline-block transition hover:text-[#0f2743]">
+            <h3 className="font-heading text-xl font-bold tracking-tight text-[#16345a]">
+              {item.deceasedFirstName} {item.deceasedLastName}
+            </h3>
+          </Link>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-base text-slate-500">
             <span className="inline-flex items-center gap-1.5">
               <CalendarDays className="h-3.5 w-3.5" />
-              {item.dateOfBirth ? `${birthDate} - ${deathDate}` : deathDate}
+              {deathDate}
             </span>
           </div>
         </div>
@@ -127,7 +131,7 @@ export default function ObituaryCard({
         </p>
 
         <Link
-          href={`/obituary/${item.id}`}
+          href={detailHref}
           className="inline-flex items-center gap-2 font-sans text-sm font-semibold text-[#16345a] transition hover:text-[#0f2743]"
         >
           View Memorial

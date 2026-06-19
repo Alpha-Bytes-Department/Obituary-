@@ -3,7 +3,7 @@
 import type { MemorialSubmission } from "./types";
 import { formatDate, getStatusMeta } from "./data";
 import { Button } from "../../../components/ui/button";
-import { PencilLine, Trash2 } from "lucide-react";
+import { HeartHandshake, PencilLine, Sparkles, Trash2 } from "lucide-react";
 
 /**
  * Renders the memorial submissions table.
@@ -18,10 +18,12 @@ export default function MemorialSubmissionsTable({
   submissions,
   onEdit,
   onRequestDelete,
+  showAdminColumns = false,
 }: {
   submissions: MemorialSubmission[];
   onEdit: (submission: MemorialSubmission) => void;
   onRequestDelete: (submission: MemorialSubmission) => void;
+  showAdminColumns?: boolean;
 }) {
   return (
     <section className="overflow-x-auto rounded-md border border-[#e5dfd7] bg-white shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
@@ -32,12 +34,18 @@ export default function MemorialSubmissionsTable({
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse" style={{ minWidth: 1040 }}>
+        <table className="w-full border-collapse" style={{ minWidth: showAdminColumns ? 1180 : 1040 }}>
           <thead className="bg-[#faf7f3] text-left text-[0.78rem] uppercase tracking-[0.18em] text-[#7a736c]">
             <tr>
               <th className="px-5 py-4 font-medium">Memorial</th>
               <th className="px-5 py-4 font-medium">Submission Date</th>
               <th className="px-5 py-4 font-medium">Status</th>
+              {showAdminColumns && (
+                <>
+                  <th className="px-5 py-4 font-medium">Donation</th>
+                  <th className="px-5 py-4 font-medium">Home Highlight</th>
+                </>
+              )}
               <th className="px-5 py-4 font-medium">Actions</th>
             </tr>
           </thead>
@@ -83,6 +91,34 @@ export default function MemorialSubmissionsTable({
                       {statusMeta.label}
                     </span>
                   </td>
+                  {showAdminColumns && (
+                    <>
+                      <td className="px-5 py-4 text-sm">
+                        <span
+                          className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${
+                            submission.donationsEnabled !== false
+                              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                              : "border-slate-200 bg-slate-100 text-slate-500"
+                          }`}
+                        >
+                          <HeartHandshake className="h-3.5 w-3.5" />
+                          {submission.donationsEnabled !== false ? "Receiving" : "Paused"}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4 text-sm">
+                        <span
+                          className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${
+                            submission.showInLivesRememberedForever
+                              ? "border-amber-200 bg-amber-50 text-amber-700"
+                              : "border-slate-200 bg-white text-slate-500"
+                          }`}
+                        >
+                          <Sparkles className="h-3.5 w-3.5" />
+                          {submission.showInLivesRememberedForever ? "Shown" : "Hidden"}
+                        </span>
+                      </td>
+                    </>
+                  )}
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-2">
                       <Button

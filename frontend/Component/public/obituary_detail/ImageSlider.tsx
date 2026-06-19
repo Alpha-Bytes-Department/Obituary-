@@ -62,17 +62,22 @@ export default function ImageSlider({ images }: ImageSliderProps) {
     );
   }, [slides.length]);
 
-  const restartTimer = useCallback(() => {
+  const pauseTimer = useCallback(() => {
     if (timerRef.current !== null) {
       window.clearInterval(timerRef.current);
     }
+    timerRef.current = null;
+  }, []);
 
+  const restartTimer = useCallback(() => {
+    pauseTimer();
+    if (slides.length <= 1) return;
     timerRef.current = window.setInterval(() => {
       setCurrent((value) =>
         slides.length === 0 ? 0 : (value + 1) % slides.length,
       );
     }, AUTO_DELAY);
-  }, [slides.length]);
+  }, [pauseTimer, slides.length]);
 
   useEffect(() => {
     setBreakpoint(getBreakpoint());
@@ -157,7 +162,13 @@ export default function ImageSlider({ images }: ImageSliderProps) {
   const sliderHeight = isMobile ? 380 : 560;
 
   return (
-    <div className="select-none">
+    <div
+      className="select-none"
+      onMouseEnter={pauseTimer}
+      onMouseLeave={restartTimer}
+      onFocus={pauseTimer}
+      onBlur={restartTimer}
+    >
       <div className="mx-auto flex w-full max-w-6xl items-center gap-3 sm:gap-4">
         <button
           type="button"

@@ -4,7 +4,7 @@ const memorialSchema = new mongoose.Schema({
   name: { type: String, required: true },
   deathDate: { type: Date, required: true },
   birthdate: { type: Date },
-  location: { type: String, required: true },
+  location: { type: String },
   memorialDetails: { type: String },
   memorialDetailVisibilityStatus: { type: Boolean, default: true },
   familyDetails: { type: String },
@@ -17,14 +17,16 @@ const memorialSchema = new mongoose.Schema({
   favouriteQuoteVisibilityStatus: { type: Boolean, default: true },
   careerSummery: { type: String },
   careerSummeryVisibilityStatus: { type: Boolean, default: true },
+  donationsEnabled: { type: Boolean, default: true },
+  showInLivesRememberedForever: { type: Boolean, default: false },
   funeralHomeLogo: { type: String },
   deadPersonPhoto: {
     type: [String],
     validate: {
       validator: function (photos) {
-        return photos.length <= 20;
+        return photos.length <= 30;
       },
-      message: "deadPersonPhoto cannot have more than 20 items.",
+      message: "deadPersonPhoto cannot have more than 30 items.",
     },
   },
   relationToDeceased: { type: String },

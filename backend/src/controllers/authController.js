@@ -24,12 +24,17 @@ const TRUSTED_FRONTEND_ORIGINS = new Set([
   "http://www.orbelofy.com",
   "http://localhost:3000",
 ]);
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // ========= Email normalizer==========
 function normalizeEmail(email) {
   return String(email || "")
     .trim()
     .toLowerCase();
+}
+
+function isValidEmail(value) {
+  return EMAIL_PATTERN.test(String(value || "").trim());
 }
 
 function normalizeBaseUrl(value) {
@@ -114,6 +119,32 @@ exports.register = async (req, res) => {
         .json({ message: "All registration fields are required" });
     }
 
+    if (!isValidEmail(normalizedEmail)) {
+      return res.status(400).json({ message: "Enter a valid email address" });
+    }
+
+    if (!/[A-Za-z]/.test(String(password)) || !/[0-9]/.test(String(password)) || String(password).length < 8) {
+      return res.status(400).json({
+        message: "Password must be at least 8 characters and include letters and numbers",
+      });
+    }
+
+    let parsedAddress;
+    if (typeof address === "string") {
+      try {
+        parsedAddress = JSON.parse(address);
+      } catch (e) {
+        parsedAddress = {};
+      }
+    } else {
+      parsedAddress = address || undefined;
+    }
+
+    const postalCode = String(parsedAddress?.postalCode || "").trim();
+    if (!/^[0-9]+$/.test(postalCode)) {
+      return res.status(400).json({ message: "Postal code must contain numbers only" });
+    }
+
     if (req.file) {
       const profileUpload = await uploadBuffer(req.file.buffer, {
         folder: "obituary/profile-photos",
@@ -129,17 +160,6 @@ exports.register = async (req, res) => {
     const otpCode = createOtpCode();
     const passwordHash = await bcrypt.hash(String(password), 12);
     const otpHash = await bcrypt.hash(otpCode, 10);
-    
-    let parsedAddress;
-    if (typeof address === "string") {
-      try {
-        parsedAddress = JSON.parse(address);
-      } catch (e) {
-        parsedAddress = {};
-      }
-    } else {
-      parsedAddress = address || undefined;
-    }
 
     await PendingRegistration.findOneAndUpdate(
       { email: normalizedEmail },

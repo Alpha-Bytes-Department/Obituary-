@@ -58,11 +58,16 @@ export default function HomeContainer() {
             images: m.deadPersonPhoto && m.deadPersonPhoto.length > 0 ? m.deadPersonPhoto : ["/Source/Placeholder_Person.png"],
             biography: m.memorialDetails || m.lifeStory || "",
             excerpt: m.careerSummery || m.memorialDetails || "",
+            showInLivesRememberedForever: m.showInLivesRememberedForever === true,
           };
         });
         // console.log("Mapped memorials:", mappedMemorials);
         setFeaturedObituaries(mappedMemorials);
-        setAllTimeObituaries(mappedMemorials.slice(0, 4));
+        setAllTimeObituaries(
+          mappedMemorials
+            .filter((memorial) => memorial.showInLivesRememberedForever)
+            .slice(0, 4)
+        );
         setAds(adsRes.data.ads || []);
       } catch (error) {
         console.error("Failed to fetch home data:", error);

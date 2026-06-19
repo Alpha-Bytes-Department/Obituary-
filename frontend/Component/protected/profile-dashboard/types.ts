@@ -42,6 +42,8 @@ export interface MemorialSubmission {
   rememberForEverQuoteVisibilityStatus?: boolean;
   favouriteQuoteVisibilityStatus?: boolean;
   careerSummeryVisibilityStatus?: boolean;
+  donationsEnabled?: boolean;
+  showInLivesRememberedForever?: boolean;
 }
 
 export interface SubmissionDraft {
@@ -86,6 +88,8 @@ export interface SubmissionDraft {
   rememberForEverQuoteVisibilityStatus?: boolean;
   favouriteQuoteVisibilityStatus?: boolean;
   careerSummeryVisibilityStatus?: boolean;
+  donationsEnabled?: boolean;
+  showInLivesRememberedForever?: boolean;
 }
 
 export interface DashboardUser {

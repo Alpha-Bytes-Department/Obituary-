@@ -15,14 +15,14 @@ const adminOnly = (req, res, next) => {
   }
 };
 
-const uploadFields = upload.fields([
+const uploadFields = upload.handleUpload(upload.fields([
   { name: "funeralHomeLogo", maxCount: 1 },
   { name: "familyTreeDiagram", maxCount: 1 },
-  { name: "deadPersonPhoto", maxCount: 20 },
+  { name: "deadPersonPhoto", maxCount: 30 },
   { name: "adImage_0", maxCount: 1 },
   { name: "adImage_1", maxCount: 1 },
   { name: "adImage_2", maxCount: 1 },
-]);
+]));
 
 router.use(authMiddleware, adminOnly);
 

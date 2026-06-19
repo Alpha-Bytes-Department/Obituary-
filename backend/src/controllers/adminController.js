@@ -101,12 +101,12 @@ exports.updateMemorial = async (req, res) => {
     const newPhotos = [];
     const deadPersonPhotoFiles = files.deadPersonPhoto || [];
     for (const file of deadPersonPhotoFiles) {
-      if (keptPhotos.length + newPhotos.length < 20) {
+      if (keptPhotos.length + newPhotos.length < 30) {
         const url = await uploadToCloudinary(file, "obituary/memorials/photos");
         if (url) newPhotos.push(url);
       }
     }
-    memorial.deadPersonPhoto = [...keptPhotos, ...newPhotos].slice(0, 20);
+    memorial.deadPersonPhoto = [...keptPhotos, ...newPhotos].slice(0, 30);
 
     // Funeral Home Logo
     if (files.funeralHomeLogo?.[0]) {
@@ -128,13 +128,16 @@ exports.updateMemorial = async (req, res) => {
     const textFields = [
       "name", "deathDate", "birthdate", "location", "memorialDetails",
       "familyDetails", "lifeStory", "rememberForEverQuote", "favouriteQuote",
-      "careerSummery", "relationToDeceased", "country", "status", "rejectionReason",
+      "careerSummery", "relationToDeceased", "country", "status", "rejectedReason",
     ];
     textFields.forEach(field => {
       if (body[field] !== undefined) {
         memorial[field] = body[field];
       }
     });
+    if (body.rejectionReason !== undefined) {
+      memorial.rejectedReason = body.rejectionReason;
+    }
 
     // ---- Visibility Flags ----
     const boolFields = [
@@ -144,6 +147,8 @@ exports.updateMemorial = async (req, res) => {
       "rememberForEverQuoteVisibilityStatus",
       "favouriteQuoteVisibilityStatus",
       "careerSummeryVisibilityStatus",
+      "donationsEnabled",
+      "showInLivesRememberedForever",
     ];
     boolFields.forEach(field => {
       if (body[field] !== undefined) {

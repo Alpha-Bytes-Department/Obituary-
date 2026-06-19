@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Eye, EyeOff, Upload, X, Plus } from "lucide-react";
+import { Eye, EyeOff, HeartHandshake, Sparkles, Upload, X, Plus } from "lucide-react";
 import { Button } from "../../../components/ui/button";
 import {
   Dialog,
@@ -24,6 +24,8 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "funeral", label: "Funeral Details" },
   { id: "visibility", label: "Visibility" },
 ];
+
+const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 
 interface Props {
   submission: MemorialSubmission;
@@ -77,10 +79,23 @@ export default function AdminEditDialog({ submission, onSaved, onClose }: Props)
   const [rememberVis, setRememberVis] = useState(submission.rememberForEverQuoteVisibilityStatus ?? true);
   const [quoteVis, setQuoteVis] = useState(submission.favouriteQuoteVisibilityStatus ?? true);
   const [careerVis, setCareerVis] = useState(submission.careerSummeryVisibilityStatus ?? true);
+  const [donationsEnabled, setDonationsEnabled] = useState(submission.donationsEnabled ?? true);
+  const [showInLivesRememberedForever, setShowInLivesRememberedForever] = useState(
+    submission.showInLivesRememberedForever ?? false
+  );
 
   const photoInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const treeInputRef = useRef<HTMLInputElement>(null);
+
+  const isValidImageFile = (file: File) => {
+    if (file.size <= MAX_IMAGE_SIZE_BYTES) {
+      return true;
+    }
+
+    toast.error(`${file.name} is larger than 10MB.`);
+    return false;
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -134,6 +149,8 @@ export default function AdminEditDialog({ submission, onSaved, onClose }: Props)
       formData.append("rememberForEverQuoteVisibilityStatus", String(rememberVis));
       formData.append("favouriteQuoteVisibilityStatus", String(quoteVis));
       formData.append("careerSummeryVisibilityStatus", String(careerVis));
+      formData.append("donationsEnabled", String(donationsEnabled));
+      formData.append("showInLivesRememberedForever", String(showInLivesRememberedForever));
 
       const res = await api.put(`/admin/memorials/${submission.id}`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
@@ -299,7 +316,13 @@ export default function AdminEditDialog({ submission, onSaved, onClose }: Props)
                       type="file"
                       accept="image/*"
                       className="hidden"
-                      onChange={(e) => { if (e.target.files?.[0]) setNewLogoFile(e.target.files[0]); }}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file && isValidImageFile(file)) {
+                          setNewLogoFile(file);
+                        }
+                        e.target.value = "";
+                      }}
                     />
                     {newLogoFile && (
                       <button onClick={() => setNewLogoFile(null)} className="text-red-400 hover:text-red-600">
@@ -333,7 +356,13 @@ export default function AdminEditDialog({ submission, onSaved, onClose }: Props)
                       type="file"
                       accept="image/*"
                       className="hidden"
-                      onChange={(e) => { if (e.target.files?.[0]) setNewTreeFile(e.target.files[0]); }}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file && isValidImageFile(file)) {
+                          setNewTreeFile(file);
+                        }
+                        e.target.value = "";
+                      }}
                     />
                     {newTreeFile && (
                       <button onClick={() => setNewTreeFile(null)} className="text-red-400 hover:text-red-600">
@@ -345,7 +374,7 @@ export default function AdminEditDialog({ submission, onSaved, onClose }: Props)
 
                 {/* Deceased person photos */}
                 <div>
-                  <label className={labelCls}>Deceased Person Photos ({existingPhotos.length + newPhotos.length}/20)</label>
+                  <label className={labelCls}>Deceased Person Photos ({existingPhotos.length + newPhotos.length}/30)</label>
                   <div className="flex flex-wrap gap-3 mt-2">
                     {existingPhotos.map((url, i) => (
                       <div key={i} className="relative group">
@@ -369,7 +398,7 @@ export default function AdminEditDialog({ submission, onSaved, onClose }: Props)
                         </button>
                       </div>
                     ))}
-                    {existingPhotos.length + newPhotos.length < 20 && (
+                    {existingPhotos.length + newPhotos.length < 30 && (
                       <button
                         type="button"
                         onClick={() => photoInputRef.current?.click()}
@@ -386,9 +415,10 @@ export default function AdminEditDialog({ submission, onSaved, onClose }: Props)
                       multiple
                       className="hidden"
                       onChange={(e) => {
-                        const files = Array.from(e.target.files || []);
-                        const remaining = 20 - existingPhotos.length - newPhotos.length;
+                        const files = Array.from(e.target.files || []).filter(isValidImageFile);
+                        const remaining = 30 - existingPhotos.length - newPhotos.length;
                         setNewPhotos((p) => [...p, ...files.slice(0, remaining)]);
+                        e.target.value = "";
                       }}
                     />
                   </div>
@@ -465,6 +495,65 @@ export default function AdminEditDialog({ submission, onSaved, onClose }: Props)
             {tab === "visibility" && (
               <div className="space-y-3">
                 <p className="text-sm text-slate-500 mb-4">Toggle which sections are publicly visible on the memorial page.</p>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => setDonationsEnabled((value) => !value)}
+                    className={`rounded-xl border px-4 py-4 text-left transition ${
+                      donationsEnabled
+                        ? "border-emerald-200 bg-emerald-50"
+                        : "border-slate-200 bg-slate-50"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <span className={`flex h-10 w-10 items-center justify-center rounded-full ${
+                          donationsEnabled ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-500"
+                        }`}>
+                          <HeartHandshake className="h-5 w-5" />
+                        </span>
+                        <div>
+                          <p className="text-sm font-semibold text-slate-800">Donation Receiving</p>
+                          <p className="text-xs text-slate-500">Controls the public donation button and payment intent.</p>
+                        </div>
+                      </div>
+                      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                        donationsEnabled ? "bg-emerald-600 text-white" : "bg-slate-300 text-slate-700"
+                      }`}>
+                        {donationsEnabled ? "On" : "Off"}
+                      </span>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowInLivesRememberedForever((value) => !value)}
+                    className={`rounded-xl border px-4 py-4 text-left transition ${
+                      showInLivesRememberedForever
+                        ? "border-amber-200 bg-amber-50"
+                        : "border-slate-200 bg-slate-50"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <span className={`flex h-10 w-10 items-center justify-center rounded-full ${
+                          showInLivesRememberedForever ? "bg-amber-100 text-amber-700" : "bg-slate-200 text-slate-500"
+                        }`}>
+                          <Sparkles className="h-5 w-5" />
+                        </span>
+                        <div>
+                          <p className="text-sm font-semibold text-slate-800">Lives Remembered Forever</p>
+                          <p className="text-xs text-slate-500">Shows this memorial in the homepage highlight section.</p>
+                        </div>
+                      </div>
+                      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                        showInLivesRememberedForever ? "bg-amber-600 text-white" : "bg-slate-300 text-slate-700"
+                      }`}>
+                        {showInLivesRememberedForever ? "Shown" : "Hidden"}
+                      </span>
+                    </div>
+                  </button>
+                </div>
                 {[
                   { label: "Memorial Details (Obituary Text)", value: memorialDetailVis, set: setMemorialDetailVis },
                   { label: "Family Details", value: familyDetailVis, set: setFamilyDetailVis },

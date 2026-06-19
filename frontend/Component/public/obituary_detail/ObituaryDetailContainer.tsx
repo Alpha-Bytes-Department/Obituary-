@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  FaDiscord,
   FaFacebookF,
   FaFacebookMessenger,
   FaEnvelope,
@@ -13,12 +12,10 @@ import {
   FaPhoneAlt,
   FaRedditAlien,
   FaTelegramPlane,
-  FaTwitter,
   FaWhatsapp,
-  FaWeixin,
   FaCalendarAlt,
-  FaClock,
 } from "react-icons/fa";
+import { FaInstagram, FaTiktok, FaXTwitter } from "react-icons/fa6";
 import { FiCopy } from "react-icons/fi";
 
 import { useAxios } from "../../../context/AxiosProvider";
@@ -68,6 +65,7 @@ interface MemorialData {
   favouriteQuoteVisibilityStatus?: boolean;
   careerSummery?: string;
   careerSummeryVisibilityStatus?: boolean;
+  donationsEnabled?: boolean;
   funeralHomeLogo?: string;
   deadPersonPhoto?: string[];
   familyTreeDiagram?: string;
@@ -142,10 +140,16 @@ function ObituaryImageCarousel({ images }: { images: string[] }) {
     setCurrent((prev) => (prev - 1 + slides.length) % slides.length);
   }, [slides.length]);
 
-  const restartTimer = useCallback(() => {
+  const pauseTimer = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = null;
+  }, []);
+
+  const restartTimer = useCallback(() => {
+    pauseTimer();
+    if (slides.length <= 1) return;
     timerRef.current = setInterval(nextSlide, AUTO_DELAY);
-  }, [nextSlide]);
+  }, [nextSlide, pauseTimer, slides.length]);
 
   useEffect(() => {
     if (!slides.length) return;
@@ -158,7 +162,13 @@ function ObituaryImageCarousel({ images }: { images: string[] }) {
   return (
     <>
       {/* DESKTOP SLIDER */}
-      <div className="relative mx-auto hidden w-full max-w-7xl overflow-hidden py-14 md:block">
+      <div
+        className="relative mx-auto hidden w-full max-w-7xl overflow-hidden py-14 md:block"
+        onMouseEnter={pauseTimer}
+        onMouseLeave={restartTimer}
+        onFocus={pauseTimer}
+        onBlur={restartTimer}
+      >
         <button type="button" onClick={() => { prevSlide(); restartTimer(); }}
           className="absolute left-4 top-1/2 z-50 flex h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full bg-neutral-200/90 text-5xl text-slate-700 transition-all duration-300 hover:scale-105 hover:bg-neutral-300">‹</button>
         <button type="button" onClick={() => { nextSlide(); restartTimer(); }}
@@ -182,7 +192,13 @@ function ObituaryImageCarousel({ images }: { images: string[] }) {
       </div>
 
       {/* MOBILE SLIDER */}
-      <div className="relative mx-auto block w-full overflow-hidden py-8 md:hidden">
+      <div
+        className="relative mx-auto block w-full overflow-hidden py-8 md:hidden"
+        onMouseEnter={pauseTimer}
+        onMouseLeave={restartTimer}
+        onFocus={pauseTimer}
+        onBlur={restartTimer}
+      >
         <button type="button" onClick={() => { prevSlide(); restartTimer(); }}
           className="absolute left-1/2 top-4 z-50 flex h-11 w-11 -translate-x-1/2 items-center justify-center rounded-full bg-neutral-200/90 text-3xl text-slate-700">‹</button>
         <button type="button" onClick={() => { nextSlide(); restartTimer(); }}
@@ -264,6 +280,19 @@ export default function ObituaryDetailContainer({ id }: ObituaryDetailContainerP
 
   const openShareUrl = (url: string) => window.open(url, "_blank", "noopener,noreferrer");
 
+  const handleNativeShare = async () => {
+    if (navigator.share && shareUrl) {
+      try {
+        await navigator.share({ title: shareTitle, text: shareText, url: shareUrl });
+        return;
+      } catch {
+        return;
+      }
+    }
+
+    openShareUrl(shareUrl || window.location.href);
+  };
+
   const handleCopyLink = async () => {
     if (!shareUrl) return;
     await navigator.clipboard.writeText(shareUrl);
@@ -303,6 +332,7 @@ export default function ObituaryDetailContainer({ id }: ObituaryDetailContainerP
   const showRememberQuote = memorial.rememberForEverQuoteVisibilityStatus !== false;
   const showFavouriteQuote = memorial.favouriteQuoteVisibilityStatus !== false;
   const showCareerSummery = memorial.careerSummeryVisibilityStatus !== false;
+  const donationsEnabled = memorial.donationsEnabled !== false;
 
   return (
     <main className="min-h-screen text-slate-900 sm:px-6 lg:px-8">
@@ -314,10 +344,10 @@ export default function ObituaryDetailContainer({ id }: ObituaryDetailContainerP
               <Image
                 src={memorial.funeralHomeLogo}
                 alt="Funeral home logo"
-                width={1000}
-                height={200}
+                width={333}
+                height={67}
                 priority
-                className="h-auto w-full max-w-5xl object-contain"
+                className="h-auto w-full max-w-xs object-contain sm:max-w-sm"
               />
             </div>
           )}
@@ -330,7 +360,7 @@ export default function ObituaryDetailContainer({ id }: ObituaryDetailContainerP
               {firstName} {lastName}
             </h1>
             <p className="text-sm text-slate-500 sm:text-base">
-              {formatDate(memorial.birthdate)} {memorial.birthdate && memorial.deathDate ? "–" : ""} {formatDate(memorial.deathDate)}
+              {formatDate(memorial.deathDate)}
             </p>
             {(cityPart || memorial.country) && (
               <p className="text-sm text-slate-500 sm:text-base">
@@ -476,13 +506,30 @@ export default function ObituaryDetailContainer({ id }: ObituaryDetailContainerP
             </h2>
 
             <div className="mt-8 rounded-[18px] bg-white p-4 shadow-[0_2px_10px_rgba(15,23,42,0.06)] sm:p-5">
-              <p className="font-serif text-lg leading-7 text-[#2b2137]">
-                In memory of {firstName}, donations will be directed to trusted charitable causes that reflect their values and bring comfort to others.
-              </p>
-              <Link href={`/obituary/${id}/donate`}
-                className="mt-4 inline-flex items-center gap-2 rounded-full bg-[#cf142b] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#b81125]">
-                <span className="text-base">♡</span> Donate
-              </Link>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <span
+                    className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
+                      donationsEnabled
+                        ? "bg-emerald-50 text-emerald-700"
+                        : "bg-slate-100 text-slate-600"
+                    }`}
+                  >
+                    {donationsEnabled ? "Donations receiving" : "Donations paused"}
+                  </span>
+                  <p className="mt-3 font-serif text-lg leading-7 text-[#2b2137]">
+                    {donationsEnabled
+                      ? `In memory of ${firstName}, donations will be directed to trusted charitable causes that reflect their values and bring comfort to others.`
+                      : `Donation receiving is currently turned off for ${firstName}.`}
+                  </p>
+                </div>
+                {donationsEnabled && (
+                  <Link href={`/obituary/${id}/donate`}
+                    className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-[#cf142b] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#b81125]">
+                    <span className="text-base">♡</span> Donate
+                  </Link>
+                )}
+              </div>
             </div>
 
             <div className="mt-6 grid gap-4 md:grid-cols-2">
@@ -600,14 +647,14 @@ export default function ObituaryDetailContainer({ id }: ObituaryDetailContainerP
             <div className="mt-4 border-t border-slate-200 pt-5">
               <div className="grid grid-cols-4 gap-4 text-center">
                 {[
-                  { label: "Twitter", icon: FaTwitter, bg: "bg-sky-50 text-[#1d9bf0]", onClick: () => openShareUrl(`https://twitter.com/intent/tweet?text=${encodedShareText}&url=${encodedShareUrl}`) },
+                  { label: "X", icon: FaXTwitter, bg: "bg-slate-100 text-slate-950", onClick: () => openShareUrl(`https://x.com/intent/tweet?text=${encodedShareText}&url=${encodedShareUrl}`) },
                   { label: "Facebook", icon: FaFacebookF, bg: "bg-blue-50 text-[#1877f2]", onClick: () => openShareUrl(`https://www.facebook.com/sharer/sharer.php?u=${encodedShareUrl}`) },
                   { label: "Reddit", icon: FaRedditAlien, bg: "bg-orange-100 text-[#ff4500]", onClick: () => openShareUrl(`https://www.reddit.com/submit?url=${encodedShareUrl}&title=${encodedShareText}`) },
-                  { label: "Discord", icon: FaDiscord, bg: "bg-slate-200 text-[#5865f2]", onClick: () => openShareUrl(`https://discord.com/channels/@me`) },
+                  { label: "Instagram", icon: FaInstagram, bg: "bg-pink-100 text-[#c13584]", onClick: handleNativeShare },
                   { label: "Whatsapp", icon: FaWhatsapp, bg: "bg-emerald-100 text-[#25d366]", onClick: () => openShareUrl(`https://wa.me/?text=${encodedShareText}%20${encodedShareUrl}`) },
                   { label: "Messenger", icon: FaFacebookMessenger, bg: "bg-indigo-100 text-[#006aff]", onClick: () => openShareUrl(`https://www.messenger.com/`) },
                   { label: "Telegram", icon: FaTelegramPlane, bg: "bg-sky-100 text-[#229ed9]", onClick: () => openShareUrl(`https://t.me/share/url?url=${encodedShareUrl}&text=${encodedShareText}`) },
-                  { label: "WeChat", icon: FaWeixin, bg: "bg-lime-100 text-[#07c160]", onClick: () => openShareUrl(`https://www.wechat.com/`) },
+                  { label: "TikTok", icon: FaTiktok, bg: "bg-zinc-100 text-zinc-950", onClick: handleNativeShare },
                 ].map(({ label, icon: Icon, bg, onClick }) => (
                   <button key={label} type="button" onClick={onClick} className="flex flex-col items-center gap-2">
                     <span className={`flex h-16 w-16 items-center justify-center rounded-full ${bg}`}><Icon className="h-7 w-7" /></span>

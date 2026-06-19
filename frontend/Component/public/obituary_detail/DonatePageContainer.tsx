@@ -20,6 +20,7 @@ export default function DonatePageContainer({ memorialId }: DonatePageContainerP
   // Memorial info
   const [memorialName, setMemorialName] = useState("");
   const [memorialImage, setMemorialImage] = useState("");
+  const [donationsEnabled, setDonationsEnabled] = useState(true);
   const [loading, setLoading] = useState(true);
 
   // Form state
@@ -42,6 +43,7 @@ export default function DonatePageContainer({ memorialId }: DonatePageContainerP
         const m = res.data.memorial;
         setMemorialName(m?.name || "");
         setMemorialImage(m?.deadPersonPhoto?.[0] || "");
+        setDonationsEnabled(m?.donationsEnabled !== false);
       } catch {
         // Silently handle — we can still accept donations
       } finally {
@@ -52,8 +54,16 @@ export default function DonatePageContainer({ memorialId }: DonatePageContainerP
   }, [memorialId, api]);
 
   const handleContinueToPayment = async () => {
+    if (!donationsEnabled) {
+      alert("Donations are currently turned off for this memorial.");
+      return;
+    }
     if (!donorName.trim() || !donorEmail.trim() || !donationAmount || Number(donationAmount) < 1) {
       alert("Please fill in your name, email, and an amount of at least $1.");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(donorEmail.trim())) {
+      alert("Please enter a valid email address.");
       return;
     }
     setIsCreating(true);
@@ -83,6 +93,37 @@ export default function DonatePageContainer({ memorialId }: DonatePageContainerP
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-[#274877]" />
+      </div>
+    );
+  }
+
+  if (!donationsEnabled) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-[#f5f1eb] via-white to-[#f5f1eb]">
+        <div className="border-b border-slate-200 bg-white/80 backdrop-blur-sm">
+          <div className="mx-auto flex max-w-5xl items-center gap-4 px-4 py-4 sm:px-6">
+            <Link href={`/obituary/${memorialId}`}
+              className="inline-flex items-center gap-2 text-sm text-[#274877] transition hover:text-[#1f3a60]">
+              <ArrowLeft className="h-4 w-4" /> Back to Memorial
+            </Link>
+          </div>
+        </div>
+        <div className="mx-auto flex max-w-3xl px-4 py-16 sm:px-6">
+          <div className="w-full rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-lg">
+            <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-slate-100">
+              <Heart className="h-7 w-7 text-slate-500" />
+            </div>
+            <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+              Donations paused
+            </span>
+            <h1 className="mt-4 font-serif text-3xl font-semibold text-[#1f1630]">
+              Donations are currently turned off
+            </h1>
+            <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-600">
+              The administrator has paused donation receiving for {memorialName || "this memorial"}.
+            </p>
+          </div>
+        </div>
       </div>
     );
   }

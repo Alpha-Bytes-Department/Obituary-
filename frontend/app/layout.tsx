@@ -21,8 +21,41 @@ const crimsonText = Crimson_Text({
 });
 
 export const metadata: Metadata = {
-  title: "Memorials & Obituaries",
-  description: "Frontend shell for the Memorials & Obituaries platform",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://orbelofy.com"),
+  title: {
+    default: "Orbelofy | Memorials & Obituaries",
+    template: "%s | Orbelofy",
+  },
+  description:
+    "Create, discover, and share meaningful online memorials and obituary pages with photos, funeral details, tributes, and donation options.",
+  applicationName: "Orbelofy",
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    title: "Orbelofy | Memorials & Obituaries",
+    description:
+      "Create, discover, and share meaningful online memorials and obituary pages.",
+    url: "/",
+    siteName: "Orbelofy",
+    images: [
+      {
+        url: "/logo.png",
+        width: 512,
+        height: 512,
+        alt: "Orbelofy",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "Orbelofy | Memorials & Obituaries",
+    description:
+      "Create, discover, and share meaningful online memorials and obituary pages.",
+    images: ["/logo.png"],
+  },
   icons: {
     icon: "/favicon.png",
     shortcut: "/favicon.png",
